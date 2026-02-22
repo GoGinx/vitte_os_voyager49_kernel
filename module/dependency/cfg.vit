@@ -1,5 +1,287 @@
-space module/dependency/cfg
+vitte 1.0
 
-<<< auto generated >>>
+space vitte_os_voyager49_kernel/module/dependency/config
+
+pull core/text
+pull core/collections
+pull core/hash
+pull core/time
+pull core/env
 
 share all
+
+<<<
+  Voyager49 Kernel – Dependency System Configuration (MAX)
+
+  Enterprise / Kernel-grade resolver configuration:
+    - Version solving strategy
+    - Multi-registry priority
+    - Mirror fallback
+    - Offline mode
+    - Deterministic builds
+    - Feature resolution policy
+    - Security integrity policy
+    - Profile-based configuration
+>>>
+
+# ============================================================
+# ENUMS
+# ============================================================
+
+pick VersionStrategy {
+    case Highest()
+    case Lowest()
+    case Minimal()
+    case Conservative()
+}
+
+pick ConflictPolicy {
+    case FailFast()
+    case Explain()
+    case Strict()
+}
+
+pick RegistryMode {
+    case Online()
+    case Offline()
+    case MirrorOnly()
+}
+
+pick IntegrityPolicy {
+    case None()
+    case Checksum()
+    case Strict()
+}
+
+pick ProfileKind {
+    case Dev()
+    case Release()
+    case CI()
+}
+
+# ============================================================
+# REGISTRY CONFIG
+# ============================================================
+
+form RegistryConfig {
+    field name       as Text
+    field url        as Text
+    field priority   as U32
+    field mirror_of  as Text?
+    field enabled    as Bool
+}
+
+# ============================================================
+# CACHE CONFIG
+# ============================================================
+
+form CacheConfig {
+    field path           as Text
+    field max_size_mb    as U32
+    field purge_on_boot  as Bool
+}
+
+# ============================================================
+# SOLVER CONFIG
+# ============================================================
+
+form SolverConfig {
+    field strategy          as VersionStrategy
+    field conflict_policy   as ConflictPolicy
+    field allow_prerelease  as Bool
+    field enable_features   as Bool
+    field parallel          as Bool
+    field backtracking_limit as U32
+}
+
+# ============================================================
+# SECURITY CONFIG
+# ============================================================
+
+form SecurityConfig {
+    field integrity_policy as IntegrityPolicy
+    field audit_enabled    as Bool
+    field enforce_signed   as Bool
+}
+
+# ============================================================
+# PROFILE CONFIG
+# ============================================================
+
+form ProfileConfig {
+    field kind as ProfileKind
+    field solver as SolverConfig
+}
+
+# ============================================================
+# GLOBAL CONFIG
+# ============================================================
+
+form ResolverConfig {
+
+    field profile        as ProfileKind
+    field profiles       as List of ProfileConfig
+
+    field registries     as List of RegistryConfig
+    field registry_mode  as RegistryMode
+
+    field cache          as CacheConfig
+    field security       as SecurityConfig
+
+    field deterministic  as Bool
+}
+
+# ============================================================
+# DEFAULT SOLVER (BASELINE)
+# ============================================================
+
+proc default_solver() gives SolverConfig {
+
+    give SolverConfig {
+        strategy: VersionStrategy.Highest(),
+        conflict_policy: ConflictPolicy.Explain(),
+        allow_prerelease: false,
+        enable_features: true,
+        parallel: true,
+        backtracking_limit: 100000
+    }
+}
+
+# ============================================================
+# DEFAULT CONFIG
+# ============================================================
+
+proc default_config() gives ResolverConfig {
+
+    make base_solver as SolverConfig = default_solver()
+
+    give ResolverConfig {
+
+        profile: ProfileKind.Release(),
+
+        profiles: [
+            ProfileConfig {
+                kind: ProfileKind.Dev(),
+                solver: SolverConfig {
+                    strategy: VersionStrategy.Highest(),
+                    conflict_policy: ConflictPolicy.Explain(),
+                    allow_prerelease: true,
+                    enable_features: true,
+                    parallel: true,
+                    backtracking_limit: 200000
+                }
+            },
+
+            ProfileConfig {
+                kind: ProfileKind.Release(),
+                solver: base_solver
+            },
+
+            ProfileConfig {
+                kind: ProfileKind.CI(),
+                solver: SolverConfig {
+                    strategy: VersionStrategy.Minimal(),
+                    conflict_policy: ConflictPolicy.Strict(),
+                    allow_prerelease: false,
+                    enable_features: true,
+                    parallel: false,
+                    backtracking_limit: 50000
+                }
+            }
+        ],
+
+        registries: [
+            RegistryConfig {
+                name: "voyager-official",
+                url: "https://registry.vitte-lang.org",
+                priority: 0,
+                mirror_of: null,
+                enabled: true
+            }
+        ],
+
+        registry_mode: RegistryMode.Online(),
+
+        cache: CacheConfig {
+            path: "/var/cache/voyager49",
+            max_size_mb: 8192,
+            purge_on_boot: false
+        },
+
+        security: SecurityConfig {
+            integrity_policy: IntegrityPolicy.Strict(),
+            audit_enabled: true,
+            enforce_signed: true
+        },
+
+        deterministic: true
+    }
+}
+
+# ============================================================
+# PROFILE RESOLUTION
+# ============================================================
+
+proc active_solver(cfg as ResolverConfig) gives SolverConfig {
+
+    for p in cfg.profiles {
+        if p.kind == cfg.profile {
+            give p.solver
+        }
+    }
+
+    give default_solver()
+}
+
+# ============================================================
+# ENVIRONMENT OVERRIDE (KERNEL MODE)
+# ============================================================
+
+proc apply_env(cfg as ResolverConfig) gives ResolverConfig {
+
+    if env.exists("VOYAGER_OFFLINE") {
+        cfg.registry_mode = RegistryMode.Offline()
+    }
+
+    if env.exists("VOYAGER_DEV") {
+        cfg.profile = ProfileKind.Dev()
+    }
+
+    if env.exists("VOYAGER_CI") {
+        cfg.profile = ProfileKind.CI()
+    }
+
+    give cfg
+}
+
+# ============================================================
+# VALIDATION
+# ============================================================
+
+proc validate(cfg as ResolverConfig) {
+
+    if cfg.registries.len() == 0 {
+        panic "No registry configured"
+    }
+
+    if cfg.cache.max_size_mb == 0 {
+        panic "Invalid cache size"
+    }
+}
+
+# ============================================================
+# ENTRY
+# ============================================================
+
+entry at vitte_os_voyager49_kernel/module/dependency/config {
+
+    make cfg as ResolverConfig = default_config()
+
+    cfg = apply_env(cfg)
+
+    validate(cfg)
+
+    make solver as SolverConfig = active_solver(cfg)
+
+    emit solver.strategy
+}
