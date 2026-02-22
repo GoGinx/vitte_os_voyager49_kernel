@@ -1,5 +1,152 @@
-space arch/aarch64/boot/dtb/api
+vitte 1.0
 
-<<< auto generated >>>
+space vitteos/arch/aarch64/boot/dtb
+
+<<<
+  Full AArch64 FDT Parser
+  Walk struct block + property extraction
+>>>
+
+pull vitte/core
+pull vitte/memory
 
 share all
+
+
+# ============================================================
+# Constantes FDT
+# ============================================================
+
+const FDT_MAGIC  : U32 = 0xD00DFEED
+const FDT_BEGIN  : U32 = 0x1
+const FDT_END    : U32 = 0x2
+const FDT_PROP   : U32 = 0x3
+const FDT_NOP    : U32 = 0x4
+const FDT_ENDALL : U32 = 0x9
+
+
+# ============================================================
+# Types
+# ============================================================
+
+form FdtHeader {
+    field magic          as U32
+    field totalsize      as U32
+    field off_struct     as U32
+    field off_strings    as U32
+    field off_memrsv     as U32
+    field version        as U32
+    field last_version   as U32
+    field boot_cpuid     as U32
+    field size_strings   as U32
+    field size_struct    as U32
+}
+
+form Cursor {
+    field base as Ptr<U8>
+    field off  as U32
+}
+
+pick DtbError {
+    case InvalidMagic()
+    case Malformed()
+    case Ok()
+}
+
+
+# ============================================================
+# Utils
+# ============================================================
+
+proc read_u32(cur as Ptr<Cursor>) gives U32 {
+    make ptr as Ptr<U32> = cast<Ptr<U32>>(cur->base + cur->off)
+    make val as U32 = *ptr
+    cur->off = cur->off + 4
+    give val
+}
+
+proc align4(cur as Ptr<Cursor>) {
+    cur->off = (cur->off + 3) & 0xFFFFFFFC
+}
+
+
+# ============================================================
+# Validation
+# ============================================================
+
+proc validate(addr as U64) gives Ptr<FdtHeader> {
+    make hdr as Ptr<FdtHeader> = cast<Ptr<FdtHeader>>(addr)
+
+    if hdr->magic != FDT_MAGIC {
+        give null
+    }
+
+    give hdr
+}
+
+
+# ============================================================
+# Walk struct block
+# ============================================================
+
+proc walk_struct(hdr as Ptr<FdtHeader>) gives DtbError {
+
+    make struct_base as Ptr<U8> =
+        cast<Ptr<U8>>(cast<U64>(hdr) + hdr->off_struct)
+
+    make cur as Cursor = Cursor(
+        base = struct_base,
+        off  = 0
+    )
+
+    loop {
+        make token as U32 = read_u32(&cur)
+
+        if token == FDT_BEGIN {
+            emit "NODE BEGIN"
+        }
+
+        elif token == FDT_END {
+            emit "NODE END"
+        }
+
+        elif token == FDT_PROP {
+            make len  as U32 = read_u32(&cur)
+            make name as U32 = read_u32(&cur)
+
+            emit "PROPERTY"
+            cur->off = cur->off + len
+            align4(&cur)
+        }
+
+        elif token == FDT_NOP {
+            continue
+        }
+
+        elif token == FDT_ENDALL {
+            break
+        }
+
+        otherwise {
+            give DtbError.Malformed()
+        }
+    }
+
+    give DtbError.Ok()
+}
+
+
+# ============================================================
+# Public init
+# ============================================================
+
+proc init(addr as U64) gives DtbError {
+
+    make hdr as Ptr<FdtHeader> = validate(addr)
+
+    if hdr == null {
+        give DtbError.InvalidMagic()
+    }
+
+    give walk_struct(hdr)
+}
