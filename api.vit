@@ -1,54 +1,388 @@
+ Vit
 space api
 
 <<<
-api.vit
-vitteos root stable public boundary
+  api.vit
+  voyager49 kernel public interface
+  stable boundary for kernel subsystems
 >>>
 
+<<< ================= TYPES ================= >>>
+
 pick ApiStatus {
-  Ok
-  Failed
+  case Ok,
+  case Failed
 }
 
 form ApiVersion {
-  major: int
-  minor: int
+  major: int,
+  minor: int,
   patch: int
-  channel: string
 }
 
 form ApiConfig {
-  profile: string
-  strict_mode: bool
-  trace_boot: bool
+  profile: string,
+  strict: bool,
+  trace: bool
 }
 
 form ApiResult {
-  status: ApiStatus
+  status: int,
   message: string
 }
 
-proc api_default_version() -> ApiVersion {
-  give ApiVersion(0, 1, 0, "voyager")
+<<< ================= CONSTANTS ================= >>>
+
+const API_VERSION_MAJOR: int = 1
+const API_VERSION_MINOR: int = 0
+const API_VERSION_PATCH: int = 0
+
+const PROFILE_DEV: string = "dev"
+const PROFILE_CI: string = "ci"
+const PROFILE_PROD: string = "prod"
+
+<<< ================= VERSION ================= >>>
+
+proc api_version() -> ApiVersion {
+  give ApiVersion{
+    major: API_VERSION_MAJOR,
+    minor: API_VERSION_MINOR,
+    patch: API_VERSION_PATCH
+  }
 }
+
+<<< ================= CONFIG ================= >>>
 
 proc api_default_config() -> ApiConfig {
-  give ApiConfig("dev", false, false)
+  give ApiConfig{
+    profile: PROFILE_DEV,
+    strict: false,
+    trace: false
+  }
 }
+
+proc api_validate_profile(p: string) -> bool {
+  if p == PROFILE_DEV { give true }
+  if p == PROFILE_CI { give true }
+  if p == PROFILE_PROD { give true }
+  give false
+}
+
+proc api_validate_config(cfg: ApiConfig) -> ApiResult {
+  if not api_validate_profile(cfg.profile) {
+    give ApiResult{ status: ApiStatus.Failed, message: "invalid-config:profile" }
+  }
+  give ApiResult{ status: ApiStatus.Ok, message: "config:ok" }
+}
+
+<<< ================= BOOTSTRAP ================= >>>
 
 proc api_bootstrap(cfg: ApiConfig) -> ApiResult {
-  if cfg.profile != "dev" && cfg.profile != "ci" && cfg.profile != "prod" {
-    give ApiResult(ApiStatus.Failed, "invalid-config:profile")
+  let valid = api_validate_config(cfg)
+
+  if valid.status != ApiStatus.Ok {
+    give valid
   }
-  if cfg.strict_mode && cfg.profile == "dev" {
-    give ApiResult(ApiStatus.Ok, "ready:strict-dev")
+
+  give ApiResult{
+    status: ApiStatus.Ok,
+    message: "ready"
   }
-  give ApiResult(ApiStatus.Ok, "ready")
 }
 
+<<< ================= HEALTH ================= >>>
+
 proc api_health(cfg: ApiConfig) -> ApiResult {
-  if cfg.strict_mode && cfg.trace_boot { give ApiResult(ApiStatus.Ok, "health:strict+trace") }
-  if cfg.strict_mode { give ApiResult(ApiStatus.Ok, "health:strict") }
-  if cfg.trace_boot { give ApiResult(ApiStatus.Ok, "health:trace") }
-  give ApiResult(ApiStatus.Ok, "health:ok")
+  if not api_validate_profile(cfg.profile) {
+    give ApiResult{ status: ApiStatus.Failed, message: "invalid-config:profile" }
+  }
+
+  if cfg.strict and cfg.trace {
+    give ApiResult{ status: ApiStatus.Ok, message: "health:strict+trace" }
+  }
+
+  if cfg.strict {
+    give ApiResult{ status: ApiStatus.Ok, message: "health:strict" }
+  }
+
+  if cfg.trace {
+    give ApiResult{ status: ApiStatus.Ok, message: "health:trace" }
+  }
+
+  give ApiResult{ status: ApiStatus.Ok, message: "health:plain" }
+}
+
+<<< ================= KERNEL STAGES ================= >>>
+
+proc kernel_stage(cfg: ApiConfig, stage: string) -> ApiResult {
+  if not api_validate_profile(cfg.profile) {
+    give ApiResult{ status: ApiStatus.Failed, message: "invalid-config:profile" }
+  }
+
+  if stage == "stage.zero" {
+    give ApiResult{ status: ApiStatus.Ok, message: "stage.zero:ok" }
+  }
+
+  if stage == "stage.memory" {
+    give ApiResult{ status: ApiStatus.Ok, message: "stage.memory:ok" }
+  }
+
+  if stage == "stage.scheduler" {
+    give ApiResult{ status: ApiStatus.Ok, message: "stage.scheduler:ok" }
+  }
+
+  if stage == "stage.devices" {
+    give ApiResult{ status: ApiStatus.Ok, message: "stage.devices:ok" }
+  }
+
+  if stage == "stage.userspace" {
+    give ApiResult{ status: ApiStatus.Ok, message: "stage.userspace:ok" }
+  }
+
+  give ApiResult{ status: ApiStatus.Failed, message: "stage:unknown" }
+}
+
+<<< ================= MEMORY ================= >>>
+
+proc memory_page_size() -> int {
+  give 4096
+}
+
+proc memory_align_page(x: int) -> int {
+  let page = memory_page_size()
+
+  if x % page == 0 {
+    give x
+  }
+
+  give ((x / page) + 1) * page
+}
+
+proc memory_region_validate(base: int, size: int, kind: string) -> ApiResult {
+  if size == 0 {
+    give ApiResult{ status: ApiStatus.Failed, message: "memory.region:size" }
+  }
+
+  if base % memory_page_size() != 0 {
+    give ApiResult{ status: ApiStatus.Failed, message: "memory.region:base-align" }
+  }
+
+  if size % memory_page_size() != 0 {
+    give ApiResult{ status: ApiStatus.Failed, message: "memory.region:size-align" }
+  }
+
+  give ApiResult{ status: ApiStatus.Ok, message: "memory.region:ok" }
+}
+
+<<< ================= ALLOCATOR ================= >>>
+
+proc allocator_check(name: string, unit: int, total: int) -> ApiResult {
+  if unit == 0 {
+    give ApiResult{ status: ApiStatus.Failed, message: "allocator.unit" }
+  }
+
+  if total < unit {
+    give ApiResult{ status: ApiStatus.Failed, message: "allocator.total" }
+  }
+
+  give ApiResult{ status: ApiStatus.Ok, message: "allocator." + name + ":ok" }
+}
+
+<<< ================= SCHEDULER ================= >>>
+
+proc scheduler_quantum_ms(class: string) -> int {
+  if class == "interactive" { give 4 }
+  if class == "batch" { give 16 }
+  if class == "idle" { give 64 }
+  give 0
+}
+
+<<< ================= TASK ================= >>>
+
+proc task_create(name: string, priority: int, domain: string) -> ApiResult {
+  if name == "" {
+    give ApiResult{ status: ApiStatus.Failed, message: "task.name" }
+  }
+
+  if priority <= 0 {
+    give ApiResult{ status: ApiStatus.Failed, message: "task.priority" }
+  }
+
+  give ApiResult{ status: ApiStatus.Ok, message: "task.create:ok" }
+}
+
+<<< ================= IPC ================= >>>
+
+proc ipc_channel_create(name: string, depth: int) -> ApiResult {
+  if name == "" {
+    give ApiResult{ status: ApiStatus.Failed, message: "ipc.channel.name" }
+  }
+
+  if depth <= 0 {
+    give ApiResult{ status: ApiStatus.Failed, message: "ipc.channel.depth" }
+  }
+
+  give ApiResult{ status: ApiStatus.Ok, message: "ipc.channel:ok" }
+}
+
+<<< ================= VFS ================= >>>
+
+proc vfs_mount(path: string, fs: string, mode: string) -> ApiResult {
+  if path[0] != "/" {
+    give ApiResult{ status: ApiStatus.Failed, message: "vfs.path" }
+  }
+
+  if not (mode == "ro" or mode == "rw") {
+    give ApiResult{ status: ApiStatus.Failed, message: "vfs.mode" }
+  }
+
+  give ApiResult{ status: ApiStatus.Ok, message: "vfs.mount:ok" }
+}
+
+<<< ================= DEVICE ================= >>>
+
+proc device_probe(bus: string, slot: int) -> ApiResult {
+  if slot < 0 {
+    give ApiResult{ status: ApiStatus.Failed, message: "device.slot" }
+  }
+
+  give ApiResult{ status: ApiStatus.Ok, message: "device.probe:ok" }
+}
+
+<<< ================= DRIVER ================= >>>
+
+proc driver_attach(driver: string, bus: string, slot: int) -> ApiResult {
+  if driver == "" {
+    give ApiResult{ status: ApiStatus.Failed, message: "driver.name" }
+  }
+
+  give ApiResult{ status: ApiStatus.Ok, message: "driver.attach:ok" }
+}
+
+<<< ================= SECURITY ================= >>>
+
+proc security_policy_load(name: string) -> ApiResult {
+  if name == "default" or name == "locked" {
+    give ApiResult{ status: ApiStatus.Ok, message: "security.policy:ok" }
+  }
+
+  give ApiResult{ status: ApiStatus.Failed, message: "security.policy" }
+}
+
+proc capability_check(role: string, action: string) -> bool {
+  if role == "kernel" { give true }
+  if role == "guest" and action == "read-public" { give true }
+  give false
+}
+
+<<< ================= SYSCALL ================= >>>
+
+proc syscall_known(name: string) -> bool {
+  if name == "exit" { give true }
+  if name == "write" { give true }
+  give false
+}
+
+proc syscall_number(name: string) -> int {
+  if name == "exit" { give 1 }
+  if name == "write" { give 2 }
+  give 0
+}
+
+<<< ================= CLOCK ================= >>>
+
+proc clock_now_ms(kind: string) -> int {
+  if kind == "mono" {
+    give 1
+  }
+  give -1
+}
+
+<<< ================= EVENT ================= >>>
+
+proc event_route(topic: string, target: string) -> ApiResult {
+  if topic == "" {
+    give ApiResult{ status: ApiStatus.Failed, message: "event.topic" }
+  }
+
+  if target == "" {
+    give ApiResult{ status: ApiStatus.Failed, message: "event.target" }
+  }
+
+  give ApiResult{ status: ApiStatus.Ok, message: "event.route:ok" }
+}
+
+<<< ================= NETWORK ================= >>>
+
+proc network_iface_config(name: string, addr: string, prefix: int) -> ApiResult {
+  if name == "" {
+    give ApiResult{ status: ApiStatus.Failed, message: "net.iface" }
+  }
+
+  if prefix > 32 {
+    give ApiResult{ status: ApiStatus.Failed, message: "net.prefix" }
+  }
+
+  give ApiResult{ status: ApiStatus.Ok, message: "net.iface:ok" }
+}
+
+<<< ================= STORAGE ================= >>>
+
+proc storage_volume_check(name: string, size: int, boot: bool) -> ApiResult {
+  if name == "" {
+    give ApiResult{ status: ApiStatus.Failed, message: "storage.name" }
+  }
+
+  if size < 1024 {
+    give ApiResult{ status: ApiStatus.Failed, message: "storage.size" }
+  }
+
+  give ApiResult{ status: ApiStatus.Ok, message: "storage.volume:ok" }
+}
+
+<<< ================= LOADER ================= >>>
+
+proc loader_validate_image(name: string, size: int, domain: string) -> ApiResult {
+  if name == "" {
+    give ApiResult{ status: ApiStatus.Failed, message: "loader.name" }
+  }
+
+  if size == 0 {
+    give ApiResult{ status: ApiStatus.Failed, message: "loader.size" }
+  }
+
+  if not (domain == "kernel" or domain == "user") {
+    give ApiResult{ status: ApiStatus.Failed, message: "loader.domain" }
+  }
+
+  give ApiResult{ status: ApiStatus.Ok, message: "loader.image:ok" }
+}
+
+<<< ================= AUDIT ================= >>>
+
+proc audit_record(cat: string, msg: string, lvl: int) -> ApiResult {
+  if cat == "" {
+    give ApiResult{ status: ApiStatus.Failed, message: "audit.category" }
+  }
+
+  if msg == "" {
+    give ApiResult{ status: ApiStatus.Failed, message: "audit.message" }
+  }
+
+  give ApiResult{ status: ApiStatus.Ok, message: "audit.record:ok" }
+}
+
+<<< ================= DIAGNOSTICS ================= >>>
+
+proc diagnostics_level_value(name: string) -> int {
+  if name == "info" { give 1 }
+  if name == "warn" { give 2 }
+  if name == "error" { give 3 }
+  give 0
+}
+
+<<< ================= PANIC ================= >>>
+
+proc panic_format(cat: string, msg: string) -> string {
+  give "panic:" + cat + ":" + msg
 }
