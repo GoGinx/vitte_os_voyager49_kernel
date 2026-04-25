@@ -1,39 +1,796 @@
+
+Aligné sur types.vit actuel : il contient seulement le modèle racine VitteOsStatus, VitteOsVersion, VitteOsConfig, VitteOsContext, VitteOsResult et deux helpers de statut. �
+GitHub
+Vit
 space types
 
-<<<
-types.vit
-vitteos root domain model types
->>>
+<<< =========================================================
+  VitteOS Voyager49 — types.vit
+  Domain model noyau complet
+========================================================= >>>
+
+const VITTEOS_NAME: string = "VitteOS Voyager49"
+const VITTEOS_ABI_VERSION: int = 1
+const PAGE_SIZE: u64 = 4096u64
+const MAX_CPU: int = 256
+const MAX_PROCESS: int = 1048576
+const MAX_THREAD: int = 4194304
+const MAX_OPEN_FILES: int = 1048576
+const MAX_PATH: int = 4096
+const MAX_NAME: int = 255
+const MAX_SYSCALL: int = 2048
+
+type Byte = u32
+type Word = u64
+type Address = u64
+type PhysAddr = u64
+type VirtAddr = u64
+type UserAddr = u64
+type KernelAddr = u64
+type Size = u64
+type Offset = i64
+type Timestamp = u64
+type Duration = u64
+type CpuId = u32
+type NodeId = u32
+type DeviceId = u64
+type IrqLine = u32
+type PortId = u32
+type Pid = u64
+type Tid = u64
+type Uid = u32
+type Gid = u32
+type Fd = i32
+type InodeId = u64
+type BlockId = u64
+type SectorId = u64
+type SocketId = u64
+type Handle = u64
+type Flags = u64
+type Mode = u32
+type ErrorCode = i32
+type Hash64 = u64
+type CapabilityBits = u128
 
 pick VitteOsStatus {
-  Ok
-  NotReady
-  InvalidConfig
-  Unsupported
+  Ok,
+  NotReady,
+  InvalidConfig,
+  Unsupported,
+  PermissionDenied,
+  NotFound,
+  AlreadyExists,
+  Busy,
+  Timeout,
+  Interrupted,
+  InvalidState,
+  InvalidAddress,
+  InvalidArgument,
+  OutOfMemory,
+  IoError,
+  Corrupted,
+  ChecksumMismatch,
+  SecurityViolation,
+  ResourceExhausted,
   Failed
 }
 
+pick BootPhase {
+  ResetVector,
+  FirmwareEntry,
+  LoaderEntry,
+  MemoryDiscovery,
+  CpuDiscovery,
+  ArchSetup,
+  InterruptSetup,
+  TimerSetup,
+  AllocatorSetup,
+  SchedulerSetup,
+  DeviceProbe,
+  StorageProbe,
+  NetworkProbe,
+  FilesystemMount,
+  InitSpawn,
+  UserspaceReady,
+  Running
+}
+
+pick KernelMode {
+  Boot,
+  SingleUser,
+  MultiUser,
+  Maintenance,
+  Recovery,
+  Debug,
+  Panic,
+  Halted
+}
+
+pick CpuArch {
+  X86_64,
+  AArch64,
+  RiscV64,
+  Wasm64,
+  Unknown
+}
+
+pick CpuState {
+  Offline,
+  Starting,
+  Online,
+  Idle,
+  Running,
+  Halted,
+  Faulted
+}
+
+pick ThreadState {
+  New,
+  Ready,
+  Running,
+  Sleeping,
+  Waiting,
+  Blocked,
+  Stopped,
+  Zombie,
+  Dead
+}
+
+pick ProcessState {
+  New,
+  Runnable,
+  Running,
+  Sleeping,
+  Waiting,
+  Stopped,
+  Zombie,
+  Reaped
+}
+
+pick SchedulingClass {
+  Idle,
+  Batch,
+  Normal,
+  Interactive,
+  Realtime,
+  Kernel
+}
+
+pick MemoryRegionKind {
+  Unknown,
+  Reserved,
+  Firmware,
+  KernelText,
+  KernelData,
+  KernelStack,
+  UserText,
+  UserData,
+  UserStack,
+  Heap,
+  DeviceMmio,
+  Dma,
+  Framebuffer,
+  Acpi,
+  Initrd,
+  PageTable,
+  Guard
+}
+
+pick PagePermission {
+  None,
+  Read,
+  Write,
+  Execute,
+  ReadWrite,
+  ReadExecute,
+  ReadWriteExecute
+}
+
+pick FaultKind {
+  PageFault,
+  ProtectionFault,
+  GeneralFault,
+  InvalidOpcode,
+  DivideByZero,
+  AlignmentFault,
+  StackFault,
+  MachineFault,
+  DeviceFault,
+  Unknown
+}
+
+pick DeviceClass {
+  Unknown,
+  Cpu,
+  Memory,
+  Bus,
+  Timer,
+  InterruptController,
+  Storage,
+  Network,
+  Display,
+  Input,
+  Audio,
+  Sensor,
+  Power,
+  Firmware,
+  Virtual,
+  Security
+}
+
+pick DeviceState {
+  Missing,
+  Detected,
+  Probing,
+  Ready,
+  Suspended,
+  Failed,
+  Removed
+}
+
+pick BusKind {
+  Root,
+  Pci,
+  Usb,
+  Virtio,
+  Platform,
+  I2c,
+  Spi,
+  Sata,
+  Nvme,
+  NetworkFabric,
+  Custom
+}
+
+pick FileKind {
+  Unknown,
+  Regular,
+  Directory,
+  Symlink,
+  CharacterDevice,
+  BlockDevice,
+  Socket,
+  Pipe,
+  MemoryObject,
+  EventObject
+}
+
+pick MountState {
+  Detached,
+  Mounting,
+  Mounted,
+  ReadOnly,
+  Degraded,
+  Unmounting,
+  Failed
+}
+
+pick SocketDomain {
+  Local,
+  Ipv4,
+  Ipv6,
+  Packet,
+  Kernel,
+  Custom
+}
+
+pick SocketKind {
+  Stream,
+  Datagram,
+  Raw,
+  Sequenced,
+  Control
+}
+
+pick PacketDirection {
+  Rx,
+  Tx
+}
+
+pick PowerState {
+  Unknown,
+  On,
+  Idle,
+  Standby,
+  Suspend,
+  Hibernate,
+  Off
+}
+
+pick SecurityDecision {
+  Allow,
+  Deny,
+  Audit,
+  Quarantine
+}
+
+pick LogLevel {
+  Trace,
+  Debug,
+  Info,
+  Warn,
+  Error,
+  Fatal
+}
+
+pick AuditKind {
+  Boot,
+  Login,
+  Exec,
+  Open,
+  Mount,
+  Network,
+  Permission,
+  Syscall,
+  Device,
+  Fault,
+  Security,
+  Admin
+}
+
+pick SyscallClass {
+  Process,
+  Thread,
+  Memory,
+  File,
+  Device,
+  Network,
+  Time,
+  Signal,
+  Security,
+  Debug,
+  System
+}
+
 form VitteOsVersion {
-  major: int
-  minor: int
-  patch: int
+  major: int,
+  minor: int,
+  patch: int,
   channel: string
 }
 
 form VitteOsConfig {
-  profile: string
-  strict_mode: bool
-  trace_boot: bool
-}
-
-form VitteOsContext {
-  version: VitteOsVersion
-  config: VitteOsConfig
+  profile: string,
+  strict_mode: bool,
+  trace_boot: bool,
+  panic_on_warn: bool,
+  max_cpu: int,
+  max_process: int,
+  max_thread: int,
+  max_open_files: int
 }
 
 form VitteOsResult {
-  status: VitteOsStatus
+  status: VitteOsStatus,
   message: string
+}
+
+form BootInfo {
+  phase: BootPhase,
+  loader_name: string,
+  cmdline: string,
+  initrd_addr: PhysAddr,
+  initrd_size: Size,
+  framebuffer_addr: PhysAddr,
+  framebuffer_size: Size
+}
+
+form KernelIdentity {
+  name: string,
+  version: VitteOsVersion,
+  arch: CpuArch,
+  build_id: string,
+  abi_version: int
+}
+
+form MemoryRegion {
+  base: PhysAddr,
+  size: Size,
+  kind: MemoryRegionKind,
+  flags: Flags
+}
+
+form VirtualRegion {
+  base: VirtAddr,
+  size: Size,
+  kind: MemoryRegionKind,
+  perm: PagePermission,
+  owner_pid: Pid
+}
+
+form PageFrame {
+  number: u64,
+  phys: PhysAddr,
+  ref_count: u32,
+  flags: Flags,
+  node: NodeId
+}
+
+form PageTable {
+  root: PhysAddr,
+  levels: int,
+  address_space_id: u64,
+  flags: Flags
+}
+
+form AddressSpace {
+  id: u64,
+  owner_pid: Pid,
+  table: PageTable,
+  regions: [VirtualRegion]
+}
+
+form CpuFeatures {
+  smp: bool,
+  virtualization: bool,
+  atomic64: bool,
+  simd: bool,
+  crypto: bool,
+  invariant_timer: bool
+}
+
+form CpuInfo {
+  id: CpuId,
+  node: NodeId,
+  arch: CpuArch,
+  state: CpuState,
+  frequency_hz: u64,
+  features: CpuFeatures,
+  current_tid: Tid
+}
+
+form RegisterFrame {
+  pc: VirtAddr,
+  sp: VirtAddr,
+  fp: VirtAddr,
+  flags: u64,
+  r0: u64,
+  r1: u64,
+  r2: u64,
+  r3: u64,
+  r4: u64,
+  r5: u64,
+  r6: u64,
+  r7: u64
+}
+
+form TrapFrame {
+  cpu: CpuId,
+  tid: Tid,
+  kind: FaultKind,
+  error: ErrorCode,
+  fault_addr: VirtAddr,
+  regs: RegisterFrame
+}
+
+form SchedulerPolicy {
+  class: SchedulingClass,
+  priority: int,
+  nice: int,
+  quantum_ns: Duration,
+  cpu_affinity: CapabilityBits
+}
+
+form Thread {
+  tid: Tid,
+  pid: Pid,
+  name: string,
+  state: ThreadState,
+  policy: SchedulerPolicy,
+  kernel_stack: VirtAddr,
+  user_stack: VirtAddr,
+  cpu: CpuId,
+  wake_time: Timestamp,
+  exit_code: ErrorCode
+}
+
+form Process {
+  pid: Pid,
+  parent: Pid,
+  uid: Uid,
+  gid: Gid,
+  name: string,
+  state: ProcessState,
+  address_space: AddressSpace,
+  main_thread: Tid,
+  exit_code: ErrorCode,
+  capabilities: CapabilityBits
+}
+
+form WaitQueue {
+  id: u64,
+  name: string,
+  waiters: [Tid],
+  flags: Flags
+}
+
+form Mutex {
+  id: u64,
+  owner: Tid,
+  waiters: WaitQueue,
+  recursive: bool,
+  locked: bool
+}
+
+form Semaphore {
+  id: u64,
+  value: int,
+  limit: int,
+  waiters: WaitQueue
+}
+
+form Event {
+  id: u64,
+  signaled: bool,
+  auto_reset: bool,
+  waiters: WaitQueue
+}
+
+form IrqDescriptor {
+  line: IrqLine,
+  name: string,
+  device: DeviceId,
+  enabled: bool,
+  masked: bool,
+  count: u64
+}
+
+form Timer {
+  id: u64,
+  name: string,
+  period_ns: Duration,
+  deadline_ns: Timestamp,
+  periodic: bool,
+  active: bool
+}
+
+form DeviceAddress {
+  bus: BusKind,
+  domain: u32,
+  slot: u32,
+  function: u32,
+  mmio_base: PhysAddr,
+  io_port: PortId
+}
+
+form Device {
+  id: DeviceId,
+  parent: DeviceId,
+  name: string,
+  class: DeviceClass,
+  state: DeviceState,
+  address: DeviceAddress,
+  irq: IrqLine,
+  driver: string
+}
+
+form Driver {
+  name: string,
+  version: VitteOsVersion,
+  class: DeviceClass,
+  loaded: bool,
+  devices: [DeviceId]
+}
+
+form BlockDevice {
+  device: DeviceId,
+  name: string,
+  sector_size: Size,
+  sector_count: u64,
+  read_only: bool
+}
+
+form BlockRequest {
+  id: u64,
+  device: DeviceId,
+  sector: SectorId,
+  count: u64,
+  buffer: VirtAddr,
+  write: bool
+}
+
+form Inode {
+  id: InodeId,
+  kind: FileKind,
+  mode: Mode,
+  uid: Uid,
+  gid: Gid,
+  size: Size,
+  links: u32,
+  atime: Timestamp,
+  mtime: Timestamp,
+  ctime: Timestamp
+}
+
+form DirectoryEntry {
+  name: string,
+  inode: InodeId,
+  kind: FileKind
+}
+
+form FileHandle {
+  fd: Fd,
+  inode: InodeId,
+  offset: Offset,
+  flags: Flags,
+  readable: bool,
+  writable: bool
+}
+
+form MountPoint {
+  id: u64,
+  source: string,
+  target: string,
+  fs_type: string,
+  state: MountState,
+  flags: Flags
+}
+
+form VfsNode {
+  path: string,
+  inode: Inode,
+  mount_id: u64,
+  children: [DirectoryEntry]
+}
+
+form NetworkAddress {
+  domain: SocketDomain,
+  addr0: u64,
+  addr1: u64,
+  port: u32,
+  scope: u32
+}
+
+form NetworkInterface {
+  id: DeviceId,
+  name: string,
+  up: bool,
+  mtu: u32,
+  mac0: u64,
+  rx_packets: u64,
+  tx_packets: u64,
+  rx_bytes: u64,
+  tx_bytes: u64
+}
+
+form Packet {
+  id: u64,
+  iface: DeviceId,
+  direction: PacketDirection,
+  protocol: u32,
+  size: Size,
+  checksum: Hash64
+}
+
+form Socket {
+  id: SocketId,
+  owner: Pid,
+  domain: SocketDomain,
+  kind: SocketKind,
+  local: NetworkAddress,
+  remote: NetworkAddress,
+  listening: bool,
+  connected: bool
+}
+
+form Credential {
+  uid: Uid,
+  gid: Gid,
+  groups: [Gid],
+  capabilities: CapabilityBits,
+  secure: bool
+}
+
+form SecurityLabel {
+  domain: string,
+  category: string,
+  level: int,
+  flags: Flags
+}
+
+form AccessRequest {
+  subject: Credential,
+  object: SecurityLabel,
+  action: string,
+  flags: Flags
+}
+
+form AccessResult {
+  decision: SecurityDecision,
+  reason: string,
+  audit: bool
+}
+
+form SyscallFrame {
+  number: u32,
+  class: SyscallClass,
+  args0: u64,
+  args1: u64,
+  args2: u64,
+  args3: u64,
+  args4: u64,
+  args5: u64
+}
+
+form SyscallResult {
+  status: VitteOsStatus,
+  value: u64,
+  errno: ErrorCode
+}
+
+form Signal {
+  number: int,
+  code: int,
+  sender_pid: Pid,
+  target_tid: Tid,
+  payload: u64
+}
+
+form AuditEvent {
+  id: u64,
+  time: Timestamp,
+  kind: AuditKind,
+  pid: Pid,
+  uid: Uid,
+  message: string,
+  result: VitteOsStatus
+}
+
+form LogRecord {
+  time: Timestamp,
+  cpu: CpuId,
+  level: LogLevel,
+  subsystem: string,
+  message: string
+}
+
+form PanicRecord {
+  time: Timestamp,
+  cpu: CpuId,
+  reason: string,
+  frame: TrapFrame,
+  logs: [LogRecord]
+}
+
+form ResourceUsage {
+  cpu_time_ns: Duration,
+  memory_bytes: Size,
+  open_files: int,
+  threads: int,
+  faults: u64,
+  io_read_bytes: u64,
+  io_write_bytes: u64
+}
+
+form Namespace {
+  id: u64,
+  name: string,
+  root_mount: u64,
+  hostname: string,
+  flags: Flags
+}
+
+form Container {
+  id: u64,
+  name: string,
+  namespace: Namespace,
+  init_pid: Pid,
+  limits: ResourceUsage,
+  running: bool
+}
+
+form VitteOsContext {
+  identity: KernelIdentity,
+  config: VitteOsConfig,
+  boot: BootInfo,
+  mode: KernelMode,
+  cpus: [CpuInfo],
+  memory: [MemoryRegion],
+  devices: [Device],
+  drivers: [Driver],
+  mounts: [MountPoint],
+  processes: [Process],
+  logs: [LogRecord]
 }
 
 proc status_ok() -> VitteOsStatus {
@@ -42,4 +799,516 @@ proc status_ok() -> VitteOsStatus {
 
 proc status_failed() -> VitteOsStatus {
   give VitteOsStatus.Failed
+}
+
+proc status_message(status: VitteOsStatus) -> string {
+  match status {
+    case Ok {
+      give "ok"
+    }
+    case NotReady {
+      give "not ready"
+    }
+    case InvalidConfig {
+      give "invalid config"
+    }
+    case Unsupported {
+      give "unsupported"
+    }
+    case PermissionDenied {
+      give "permission denied"
+    }
+    case NotFound {
+      give "not found"
+    }
+    case AlreadyExists {
+      give "already exists"
+    }
+    case Busy {
+      give "busy"
+    }
+    case Timeout {
+      give "timeout"
+    }
+    case Interrupted {
+      give "interrupted"
+    }
+    case InvalidState {
+      give "invalid state"
+    }
+    case InvalidAddress {
+      give "invalid address"
+    }
+    case InvalidArgument {
+      give "invalid argument"
+    }
+    case OutOfMemory {
+      give "out of memory"
+    }
+    case IoError {
+      give "io error"
+    }
+    case Corrupted {
+      give "corrupted"
+    }
+    case ChecksumMismatch {
+      give "checksum mismatch"
+    }
+    case SecurityViolation {
+      give "security violation"
+    }
+    case ResourceExhausted {
+      give "resource exhausted"
+    }
+    case Failed {
+      give "failed"
+    }
+  }
+}
+
+proc result_ok(message: string) -> VitteOsResult {
+  give VitteOsResult(VitteOsStatus.Ok, message)
+}
+
+proc result_err(status: VitteOsStatus, message: string) -> VitteOsResult {
+  give VitteOsResult(status, message)
+}
+
+proc version(major: int, minor: int, patch: int, channel: string) -> VitteOsVersion {
+  give VitteOsVersion(major, minor, patch, channel)
+}
+
+proc default_version() -> VitteOsVersion {
+  give VitteOsVersion(0, 49, 0, "dev")
+}
+
+proc default_config() -> VitteOsConfig {
+  give VitteOsConfig("kernel", true, true, false, MAX_CPU, MAX_PROCESS, MAX_THREAD, MAX_OPEN_FILES)
+}
+
+proc kernel_identity() -> KernelIdentity {
+  give KernelIdentity(VITTEOS_NAME, default_version(), CpuArch.X86_64, "voyager49-dev", VITTEOS_ABI_VERSION)
+}
+
+proc empty_boot_info() -> BootInfo {
+  give BootInfo(BootPhase.ResetVector, "", "", 0u64, 0u64, 0u64, 0u64)
+}
+
+proc memory_region(base: PhysAddr, size: Size, kind: MemoryRegionKind, flags: Flags) -> MemoryRegion {
+  give MemoryRegion(base, size, kind, flags)
+}
+
+proc virtual_region(base: VirtAddr, size: Size, kind: MemoryRegionKind, perm: PagePermission, owner_pid: Pid) -> VirtualRegion {
+  give VirtualRegion(base, size, kind, perm, owner_pid)
+}
+
+proc region_end(region: MemoryRegion) -> PhysAddr {
+  give region.base + region.size
+}
+
+proc region_contains(region: MemoryRegion, addr: PhysAddr) -> bool {
+  give addr >= region.base and addr < region.base + region.size
+}
+
+proc region_overlaps(a: MemoryRegion, b: MemoryRegion) -> bool {
+  give a.base < b.base + b.size and b.base < a.base + a.size
+}
+
+proc page_align_down(addr: u64) -> u64 {
+  give addr - (addr % PAGE_SIZE)
+}
+
+proc page_align_up(addr: u64) -> u64 {
+  if addr % PAGE_SIZE == 0u64 {
+    give addr
+  }
+
+  give addr + PAGE_SIZE - (addr % PAGE_SIZE)
+}
+
+proc pages_for_size(size: Size) -> u64 {
+  give page_align_up(size) / PAGE_SIZE
+}
+
+proc page_frame(number: u64, node: NodeId) -> PageFrame {
+  give PageFrame(number, number * PAGE_SIZE, 0u32, 0u64, node)
+}
+
+proc cpu_features_basic() -> CpuFeatures {
+  give CpuFeatures(true, false, true, false, false, true)
+}
+
+proc cpu_info(id: CpuId, arch: CpuArch) -> CpuInfo {
+  give CpuInfo(id, 0u32, arch, CpuState.Offline, 0u64, cpu_features_basic(), 0u64)
+}
+
+proc cpu_is_online(cpu: CpuInfo) -> bool {
+  give cpu.state == CpuState.Online or cpu.state == CpuState.Running or cpu.state == CpuState.Idle
+}
+
+proc scheduler_policy(class: SchedulingClass, priority: int) -> SchedulerPolicy {
+  give SchedulerPolicy(class, priority, 0, 10000000u64, 0u128)
+}
+
+proc thread_new(tid: Tid, pid: Pid, name: string) -> Thread {
+  give Thread(tid, pid, name, ThreadState.New, scheduler_policy(SchedulingClass.Normal, 0), 0u64, 0u64, 0u32, 0u64, 0)
+}
+
+proc thread_is_alive(thread: Thread) -> bool {
+  give thread.state != ThreadState.Dead and thread.state != ThreadState.Zombie
+}
+
+proc address_space_empty(id: u64, owner_pid: Pid) -> AddressSpace {
+  let table: PageTable = PageTable(0u64, 4, id, 0u64)
+  give AddressSpace(id, owner_pid, table, [])
+}
+
+proc process_new(pid: Pid, parent: Pid, uid: Uid, gid: Gid, name: string) -> Process {
+  give Process(pid, parent, uid, gid, name, ProcessState.New, address_space_empty(pid, pid), 0u64, 0, 0u128)
+}
+
+proc process_is_alive(process: Process) -> bool {
+  give process.state != ProcessState.Zombie and process.state != ProcessState.Reaped
+}
+
+proc wait_queue(id: u64, name: string) -> WaitQueue {
+  give WaitQueue(id, name, [], 0u64)
+}
+
+proc mutex_new(id: u64) -> Mutex {
+  give Mutex(id, 0u64, wait_queue(id, "mutex"), false, false)
+}
+
+proc semaphore_new(id: u64, value: int, limit: int) -> Semaphore {
+  give Semaphore(id, value, limit, wait_queue(id, "semaphore"))
+}
+
+proc event_new(id: u64, auto_reset: bool) -> Event {
+  give Event(id, false, auto_reset, wait_queue(id, "event"))
+}
+
+proc irq_descriptor(line: IrqLine, name: string, device: DeviceId) -> IrqDescriptor {
+  give IrqDescriptor(line, name, device, false, false, 0u64)
+}
+
+proc timer_once(id: u64, name: string, deadline_ns: Timestamp) -> Timer {
+  give Timer(id, name, 0u64, deadline_ns, false, true)
+}
+
+proc timer_periodic(id: u64, name: string, period_ns: Duration) -> Timer {
+  give Timer(id, name, period_ns, period_ns, true, true)
+}
+
+proc device_address(bus: BusKind) -> DeviceAddress {
+  give DeviceAddress(bus, 0u32, 0u32, 0u32, 0u64, 0u32)
+}
+
+proc device_new(id: DeviceId, name: string, class: DeviceClass, bus: BusKind) -> Device {
+  give Device(id, 0u64, name, class, DeviceState.Detected, device_address(bus), 0u32, "")
+}
+
+proc device_ready(device: Device) -> Device {
+  give Device(device.id, device.parent, device.name, device.class, DeviceState.Ready, device.address, device.irq, device.driver)
+}
+
+proc driver_new(name: string, class: DeviceClass) -> Driver {
+  give Driver(name, default_version(), class, false, [])
+}
+
+proc block_device(device: DeviceId, name: string, sector_size: Size, sector_count: u64) -> BlockDevice {
+  give BlockDevice(device, name, sector_size, sector_count, false)
+}
+
+proc block_device_size(dev: BlockDevice) -> Size {
+  give dev.sector_size * dev.sector_count
+}
+
+proc block_request_read(id: u64, device: DeviceId, sector: SectorId, count: u64, buffer: VirtAddr) -> BlockRequest {
+  give BlockRequest(id, device, sector, count, buffer, false)
+}
+
+proc block_request_write(id: u64, device: DeviceId, sector: SectorId, count: u64, buffer: VirtAddr) -> BlockRequest {
+  give BlockRequest(id, device, sector, count, buffer, true)
+}
+
+proc inode_new(id: InodeId, kind: FileKind, mode: Mode, uid: Uid, gid: Gid) -> Inode {
+  give Inode(id, kind, mode, uid, gid, 0u64, 1u32, 0u64, 0u64, 0u64)
+}
+
+proc inode_is_dir(inode: Inode) -> bool {
+  give inode.kind == FileKind.Directory
+}
+
+proc inode_is_file(inode: Inode) -> bool {
+  give inode.kind == FileKind.Regular
+}
+
+proc dir_entry(name: string, inode: InodeId, kind: FileKind) -> DirectoryEntry {
+  give DirectoryEntry(name, inode, kind)
+}
+
+proc file_handle(fd: Fd, inode: InodeId, flags: Flags) -> FileHandle {
+  give FileHandle(fd, inode, 0, flags, true, false)
+}
+
+proc mount_point(id: u64, source: string, target: string, fs_type: string) -> MountPoint {
+  give MountPoint(id, source, target, fs_type, MountState.Detached, 0u64)
+}
+
+proc vfs_node(path: string, inode: Inode, mount_id: u64) -> VfsNode {
+  give VfsNode(path, inode, mount_id, [])
+}
+
+proc network_address(domain: SocketDomain, port: u32) -> NetworkAddress {
+  give NetworkAddress(domain, 0u64, 0u64, port, 0u32)
+}
+
+proc network_interface(id: DeviceId, name: string) -> NetworkInterface {
+  give NetworkInterface(id, name, false, 1500u32, 0u64, 0u64, 0u64, 0u64, 0u64)
+}
+
+proc packet(id: u64, iface: DeviceId, direction: PacketDirection, protocol: u32, size: Size) -> Packet {
+  give Packet(id, iface, direction, protocol, size, 0u64)
+}
+
+proc socket_new(id: SocketId, owner: Pid, domain: SocketDomain, kind: SocketKind) -> Socket {
+  let empty: NetworkAddress = network_address(domain, 0u32)
+  give Socket(id, owner, domain, kind, empty, empty, false, false)
+}
+
+proc credential_root() -> Credential {
+  give Credential(0u32, 0u32, [0u32], 0u128, true)
+}
+
+proc credential_user(uid: Uid, gid: Gid) -> Credential {
+  give Credential(uid, gid, [gid], 0u128, false)
+}
+
+proc security_label(domain: string, category: string, level: int) -> SecurityLabel {
+  give SecurityLabel(domain, category, level, 0u64)
+}
+
+proc access_request(subject: Credential, object: SecurityLabel, action: string) -> AccessRequest {
+  give AccessRequest(subject, object, action, 0u64)
+}
+
+proc access_allow(reason: string) -> AccessResult {
+  give AccessResult(SecurityDecision.Allow, reason, false)
+}
+
+proc access_deny(reason: string) -> AccessResult {
+  give AccessResult(SecurityDecision.Deny, reason, true)
+}
+
+proc credential_has_cap(cred: Credential, cap: CapabilityBits) -> bool {
+  give (cred.capabilities & cap) != 0u128
+}
+
+proc syscall_frame(number: u32, class: SyscallClass) -> SyscallFrame {
+  give SyscallFrame(number, class, 0u64, 0u64, 0u64, 0u64, 0u64, 0u64)
+}
+
+proc syscall_ok(value: u64) -> SyscallResult {
+  give SyscallResult(VitteOsStatus.Ok, value, 0)
+}
+
+proc syscall_error(status: VitteOsStatus, errno: ErrorCode) -> SyscallResult {
+  give SyscallResult(status, 0u64, errno)
+}
+
+proc signal(number: int, sender_pid: Pid, target_tid: Tid) -> Signal {
+  give Signal(number, 0, sender_pid, target_tid, 0u64)
+}
+
+proc log_record(level: LogLevel, subsystem: string, message: string) -> LogRecord {
+  give LogRecord(0u64, 0u32, level, subsystem, message)
+}
+
+proc audit_event(kind: AuditKind, pid: Pid, uid: Uid, message: string, result: VitteOsStatus) -> AuditEvent {
+  give AuditEvent(0u64, 0u64, kind, pid, uid, message, result)
+}
+
+proc resource_usage_empty() -> ResourceUsage {
+  give ResourceUsage(0u64, 0u64, 0, 0, 0u64, 0u64, 0u64)
+}
+
+proc namespace_root() -> Namespace {
+  give Namespace(0u64, "root", 0u64, "vitteos", 0u64)
+}
+
+proc container_root() -> Container {
+  give Container(0u64, "host", namespace_root(), 1u64, resource_usage_empty(), true)
+}
+
+proc context_empty() -> VitteOsContext {
+  give VitteOsContext(
+    kernel_identity(),
+    default_config(),
+    empty_boot_info(),
+    KernelMode.Boot,
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    []
+  )
+}
+
+proc context_with_boot(ctx: VitteOsContext, boot: BootInfo) -> VitteOsContext {
+  give VitteOsContext(ctx.identity, ctx.config, boot, ctx.mode, ctx.cpus, ctx.memory, ctx.devices, ctx.drivers, ctx.mounts, ctx.processes, ctx.logs)
+}
+
+proc context_with_mode(ctx: VitteOsContext, mode: KernelMode) -> VitteOsContext {
+  give VitteOsContext(ctx.identity, ctx.config, ctx.boot, mode, ctx.cpus, ctx.memory, ctx.devices, ctx.drivers, ctx.mounts, ctx.processes, ctx.logs)
+}
+
+proc context_add_cpu(ctx: VitteOsContext, cpu: CpuInfo) -> VitteOsContext {
+  give VitteOsContext(ctx.identity, ctx.config, ctx.boot, ctx.mode, ctx.cpus + [cpu], ctx.memory, ctx.devices, ctx.drivers, ctx.mounts, ctx.processes, ctx.logs)
+}
+
+proc context_add_memory(ctx: VitteOsContext, region: MemoryRegion) -> VitteOsContext {
+  give VitteOsContext(ctx.identity, ctx.config, ctx.boot, ctx.mode, ctx.cpus, ctx.memory + [region], ctx.devices, ctx.drivers, ctx.mounts, ctx.processes, ctx.logs)
+}
+
+proc context_add_device(ctx: VitteOsContext, device: Device) -> VitteOsContext {
+  give VitteOsContext(ctx.identity, ctx.config, ctx.boot, ctx.mode, ctx.cpus, ctx.memory, ctx.devices + [device], ctx.drivers, ctx.mounts, ctx.processes, ctx.logs)
+}
+
+proc context_add_driver(ctx: VitteOsContext, driver: Driver) -> VitteOsContext {
+  give VitteOsContext(ctx.identity, ctx.config, ctx.boot, ctx.mode, ctx.cpus, ctx.memory, ctx.devices, ctx.drivers + [driver], ctx.mounts, ctx.processes, ctx.logs)
+}
+
+proc context_add_mount(ctx: VitteOsContext, mount: MountPoint) -> VitteOsContext {
+  give VitteOsContext(ctx.identity, ctx.config, ctx.boot, ctx.mode, ctx.cpus, ctx.memory, ctx.devices, ctx.drivers, ctx.mounts + [mount], ctx.processes, ctx.logs)
+}
+
+proc context_add_process(ctx: VitteOsContext, process: Process) -> VitteOsContext {
+  give VitteOsContext(ctx.identity, ctx.config, ctx.boot, ctx.mode, ctx.cpus, ctx.memory, ctx.devices, ctx.drivers, ctx.mounts, ctx.processes + [process], ctx.logs)
+}
+
+proc context_log(ctx: VitteOsContext, level: LogLevel, subsystem: string, message: string) -> VitteOsContext {
+  let record: LogRecord = log_record(level, subsystem, message)
+  give VitteOsContext(ctx.identity, ctx.config, ctx.boot, ctx.mode, ctx.cpus, ctx.memory, ctx.devices, ctx.drivers, ctx.mounts, ctx.processes, ctx.logs + [record])
+}
+
+proc context_is_ready(ctx: VitteOsContext) -> bool {
+  give ctx.mode == KernelMode.MultiUser or ctx.mode == KernelMode.Debug
+}
+
+proc validate_config(config: VitteOsConfig) -> VitteOsResult {
+  if config.max_cpu <= 0 {
+    give result_err(VitteOsStatus.InvalidConfig, "max_cpu must be positive")
+  }
+
+  if config.max_process <= 0 {
+    give result_err(VitteOsStatus.InvalidConfig, "max_process must be positive")
+  }
+
+  if config.max_thread <= 0 {
+    give result_err(VitteOsStatus.InvalidConfig, "max_thread must be positive")
+  }
+
+  if config.max_open_files <= 0 {
+    give result_err(VitteOsStatus.InvalidConfig, "max_open_files must be positive")
+  }
+
+  give result_ok("config valid")
+}
+
+proc validate_memory_map(regions: [MemoryRegion]) -> VitteOsResult {
+  let i: int = 0
+
+  while i < len(regions) {
+    let r: MemoryRegion = regions[i]
+
+    if r.size == 0u64 {
+      give result_err(VitteOsStatus.InvalidConfig, "zero sized memory region")
+    }
+
+    let j: int = i + 1
+
+    while j < len(regions) {
+      if region_overlaps(r, regions[j]) {
+        give result_err(VitteOsStatus.InvalidConfig, "memory region overlap")
+      }
+
+      set j = j + 1
+    }
+
+    set i = i + 1
+  }
+
+  give result_ok("memory map valid")
+}
+
+proc total_memory(regions: [MemoryRegion]) -> Size {
+  let total: Size = 0u64
+
+  for r in regions {
+    if r.kind != MemoryRegionKind.Reserved and r.kind != MemoryRegionKind.DeviceMmio {
+      set total = total + r.size
+    }
+  }
+
+  give total
+}
+
+proc count_online_cpus(cpus: [CpuInfo]) -> int {
+  let total: int = 0
+
+  for cpu in cpus {
+    if cpu_is_online(cpu) {
+      set total = total + 1
+    }
+  }
+
+  give total
+}
+
+proc find_device_by_id(devices: [Device], id: DeviceId) -> Device {
+  for device in devices {
+    if device.id == id {
+      give device
+    }
+  }
+
+  give device_new(0u64, "missing", DeviceClass.Unknown, BusKind.Root)
+}
+
+proc has_device_class(devices: [Device], class: DeviceClass) -> bool {
+  for device in devices {
+    if device.class == class and device.state == DeviceState.Ready {
+      give true
+    }
+  }
+
+  give false
+}
+
+proc boot_ready(ctx: VitteOsContext) -> VitteOsResult {
+  let cfg: VitteOsResult = validate_config(ctx.config)
+
+  if cfg.status != VitteOsStatus.Ok {
+    give cfg
+  }
+
+  if len(ctx.cpus) == 0 {
+    give result_err(VitteOsStatus.NotReady, "no cpu discovered")
+  }
+
+  if count_online_cpus(ctx.cpus) == 0 {
+    give result_err(VitteOsStatus.NotReady, "no online cpu")
+  }
+
+  if total_memory(ctx.memory) < 16777216u64 {
+    give result_err(VitteOsStatus.NotReady, "not enough memory")
+  }
+
+  if not has_device_class(ctx.devices, DeviceClass.Timer) {
+    give result_err(VitteOsStatus.NotReady, "no timer device")
+  }
+
+  give result_ok("boot ready")
 }
