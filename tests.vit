@@ -1,36 +1,1002 @@
+Vit
 space tests
 
 <<<
 tests.vit
-vitteos root deterministic checks
+voyager49 kernel deterministic checks
+large kernel-style test matrix without external system names
 >>>
 
 use api
 
+const TEST_PROFILE_DEV = "dev"
+const TEST0st TEST_PROFILE_PROD = "prod"
+const TEST_PROFILE_UNKNOWN = "unknown"
+
+proc expect_bool(name: string, value: bool) -> bool {
+  if value {
+    give true
+  }
+  emit name
+  give false
+}
+
+proc expect_eq_string(name: string, got: string, want: string) -> bool {
+  if got == want {
+    give true
+  }
+  emit name
+  emit got
+  emit want
+  give false
+}
+
+proc expect_ok(name: string, status: int) -> bool {
+  if status == api__ApiStatus.Ok {
+    give true
+  }
+  emit name
+  give false
+}
+
+proc expect_failed(name: string, status: int) -> bool {
+  if status == api__ApiStatus.Failed {
+    give true
+  }
+  emit name
+  give false
+}
+
+proc make_cfg(profile: string, strict: bool, trace: bool) -> api__ApiConfig {
+  give api__ApiConfig(profile, strict, trace)
+}
+
 proc test_bootstrap_accepts_dev() -> bool {
-  let cfg = api__ApiConfig("dev", false, false)
+  let cfg = make_cfg(TEST_PROFILE_DEV, false, false)
   let out = api__api_bootstrap(cfg)
-  if out.status != api__ApiStatus.Ok { give false }
+
+  if out.status != api__ApiStatus.Ok {
+    give false
+  }
+
+  give out.message == "ready"
+}
+
+proc test_bootstrap_accepts_ci() -> bool {
+  let cfg = make_cfg(TEST_PROFILE_CI, true, false)
+  let out = api__api_bootstrap(cfg)
+
+  if out.status != api__ApiStatus.Ok {
+    give false
+  }
+
+  give out.message == "ready"
+}
+
+proc test_bootstrap_accepts_prod_strict() -> bool {
+  let cfg = make_cfg(TEST_PROFILE_PROD, true, false)
+  let out = api__api_bootstrap(cfg)
+
+  if out.status != api__ApiStatus.Ok {
+    give false
+  }
+
   give out.message == "ready"
 }
 
 proc test_bootstrap_rejects_unknown_profile() -> bool {
-  let cfg = api__ApiConfig("unknown", false, false)
+  let cfg = make_cfg(TEST_PROFILE_UNKNOWN, false, false)
   let out = api__api_bootstrap(cfg)
-  if out.status != api__ApiStatus.Failed { give false }
+
+  if out.status != api__ApiStatus.Failed {
+    give false
+  }
+
   give out.message == "invalid-config:profile"
 }
 
-proc test_health_strict_trace() -> bool {
-  let cfg = api__ApiConfig("ci", true, true)
+proc test_health_dev_plain() -> bool {
+  let cfg = make_cfg(TEST_PROFILE_DEV, false, false)
   let out = api__api_health(cfg)
-  if out.status != api__ApiStatus.Ok { give false }
+
+  if out.status != api__ApiStatus.Ok {
+    give false
+  }
+
+  give out.message == "health:plain"
+}
+
+proc test_health_strict() -> bool {
+  let cfg = make_cfg(TEST_PROFILE_CI, true, false)
+  let out = api__api_health(cfg)
+
+  if out.status != api__ApiStatus.Ok {
+    give false
+  }
+
+  give out.message == "health:strict"
+}
+
+proc test_health_trace() -> bool {
+  let cfg = make_cfg(TEST_PROFILE_CI, false, true)
+  let out = api__api_health(cfg)
+
+  if out.status != api__ApiStatus.Ok {
+    give false
+  }
+
+  give out.message == "health:trace"
+}
+
+proc test_health_strict_trace() -> bool {
+  let cfg = make_cfg(TEST_PROFILE_CI, true, true)
+  let out = api__api_health(cfg)
+
+  if out.status != api__ApiStatus.Ok {
+    give false
+  }
+
   give out.message == "health:strict+trace"
 }
 
-proc test_suite_root() -> bool {
-  if !test_bootstrap_accepts_dev() { give false }
-  if !test_bootstrap_rejects_unknown_profile() { give false }
-  if !test_health_strict_trace() { give false }
+proc test_kernel_boot_stage_zero() -> bool {
+  let cfg = make_cfg(TEST_PROFILE_DEV, false, false)
+  let out = api__kernel_stage(cfg, "stage.zero")
+
+  if out.status != api__ApiStatus.Ok {
+    give false
+  }
+
+  give out.message == "stage.zero:ok"
+}
+
+proc test_kernel_boot_stage_memory() -> bool {
+  let cfg = make_cfg(TEST_PROFILE_DEV, true, false)
+  let out = api__kernel_stage(cfg, "stage.memory")
+
+  if out.status != api__ApiStatus.Ok {
+    give false
+  }
+
+  give out.message == "stage.memory:ok"
+}
+
+proc test_kernel_boot_stage_scheduler() -> bool {
+  let cfg = make_cfg(TEST_PROFILE_DEV, true, false)
+  let out = api__kernel_stage(cfg, "stage.scheduler")
+
+  if out.status != api__ApiStatus.Ok {
+    give false
+  }
+
+  give out.message == "stage.scheduler:ok"
+}
+
+proc test_kernel_boot_stage_devices() -> bool {
+  let cfg = make_cfg(TEST_PROFILE_DEV, true, true)
+  let out = api__kernel_stage(cfg, "stage.devices")
+
+  if out.status != api__ApiStatus.Ok {
+    give false
+  }
+
+  give out.message == "stage.devices:ok"
+}
+
+proc test_kernel_boot_stage_userspace() -> bool {
+  let cfg = make_cfg(TEST_PROFILE_CI, true, true)
+  let out = api__kernel_stage(cfg, "stage.userspace")
+
+  if out.status != api__ApiStatus.Ok {
+    give false
+  }
+
+  give out.message == "stage.userspace:ok"
+}
+
+proc test_memory_page_size() -> bool {
+  give api__memory_page_size() == 4096
+}
+
+proc test_memory_align_page_zero() -> bool {
+  give api__memory_align_page(0) == 0
+}
+
+proc test_memory_align_page_one() -> bool {
+  give api__memory_align_page(1) == 4096
+}
+
+proc test_memory_align_page_exact() -> bool {
+  give api__memory_align_page(8192) == 8192
+}
+
+proc test_memory_region_accepts_normal() -> bool {
+  let out = api__memory_region_validate(4096, 16384, "normal")
+
+  if out.status != api__ApiStatus.Ok {
+    give false
+  }
+
+  give out.message == "memory.region:ok"
+}
+
+proc test_memory_region_rejects_zero_size() -> bool {
+  let out = api__memory_region_validate(4096, 0, "normal")
+
+  if out.status != api__ApiStatus.Failed {
+    give false
+  }
+
+  give out.message == "memory.region:size"
+}
+
+proc test_memory_region_rejects_unaligned_base() -> bool {
+  let out = api__memory_region_validate(123, 4096, "normal")
+
+  if out.status != api__ApiStatus.Failed {
+    give false
+  }
+
+  give out.message == "memory.region:base-align"
+}
+
+proc test_memory_region_rejects_unaligned_size() -> bool {
+  let out = api__memory_region_validate(4096, 123, "normal")
+
+  if out.status != api__ApiStatus.Failed {
+    give false
+  }
+
+  give out.message == "memory.region:size-align"
+}
+
+proc test_allocator_boot_pool() -> bool {
+  let out = api__allocator_check("boot", 64, 4096)
+
+  if out.status != api__ApiStatus.Ok {
+    give false
+  }
+
+  give out.message == "allocator.boot:ok"
+}
+
+proc test_allocator_small_pool() -> bool {
+  let out = api__allocator_check("small", 256, 65536)
+
+  if out.status != api__ApiStatus.Ok {
+    give false
+  }
+
+  give out.message == "allocator.small:ok"
+}
+
+proc test_allocator_large_pool() -> bool {
+  let out = api__allocator_check("large", 4096, 1048576)
+
+  if out.status != api__ApiStatus.Ok {
+    give false
+  }
+
+  give out.message == "allocator.large:ok"
+}
+
+proc test_allocator_rejects_zero_unit() -> bool {
+  let out = api__allocator_check("bad", 0, 4096)
+
+  if out.status != api__ApiStatus.Failed {
+    give false
+  }
+
+  give out.message == "allocator.unit"
+}
+
+proc test_scheduler_quantum_min() -> bool {
+  give api__scheduler_quantum_ms("interactive") == 4
+}
+
+proc test_scheduler_quantum_batch() -> bool {
+  give api__scheduler_quantum_ms("batch") == 16
+}
+
+proc test_scheduler_quantum_idle() -> bool {
+  give api__scheduler_quantum_ms("idle") == 64
+}
+
+proc test_scheduler_rejects_unknown_class() -> bool {
+  give api__scheduler_quantum_ms("unknown") == 0
+}
+
+proc test_task_create_init() -> bool {
+  let out = api__task_create("init", 1, "system")
+
+  if out.status != api__ApiStatus.Ok {
+    give false
+  }
+
+  give out.message == "task.create:ok"
+}
+
+proc test_task_rejects_empty_name() -> bool {
+  let out = api__task_create("", 1, "system")
+
+  if out.status != api__ApiStatus.Failed {
+    give false
+  }
+
+  give out.message == "task.name"
+}
+
+proc test_task_rejects_bad_priority() -> bool {
+  let out = api__task_create("worker", 0, "system")
+
+  if out.status != api__ApiStatus.Failed {
+    give false
+  }
+
+  give out.message == "task.priority"
+}
+
+proc test_ipc_channel_create() -> bool {
+  let out = api__ipc_channel_create("events", 64)
+
+  if out.status != api__ApiStatus.Ok {
+    give false
+  }
+
+  give out.message == "ipc.channel:ok"
+}
+
+proc test_ipc_channel_rejects_zero_depth() -> bool {
+  let out = api__ipc_channel_create("events", 0)
+
+  if out.status != api__ApiStatus.Failed {
+    give false
+  }
+
+  give out.message == "ipc.channel.depth"
+}
+
+proc test_ipc_channel_rejects_empty_name() -> bool {
+  let out = api__ipc_channel_create("", 64)
+
+  if out.status != api__ApiStatus.Failed {
+    give false
+  }
+
+  give out.message == "ipc.channel.name"
+}
+
+proc test_vfs_mount_root() -> bool {
+  let out = api__vfs_mount("/", "rootfs", "ro")
+
+  if out.status != api__ApiStatus.Ok {
+    give false
+  }
+
+  give out.message == "vfs.mount:ok"
+}
+
+proc test_vfs_mount_runtime() -> bool {
+  let out = api__vfs_mount("/run", "memfs", "rw")
+
+  if out.status != api__ApiStatus.Ok {
+    give false
+  }
+
+  give out.message == "vfs.mount:ok"
+}
+
+proc test_vfs_rejects_relative_path() -> bool {
+  let out = api__vfs_mount("run", "memfs", "rw")
+
+  if out.status != api__ApiStatus.Failed {
+    give false
+  }
+
+  give out.message == "vfs.path"
+}
+
+proc test_vfs_rejects_unknown_mode() -> bool {
+  let out = api__vfs_mount("/data", "memfs", "bad")
+
+  if out.status != api__ApiStatus.Failed {
+    give false
+  }
+
+  give out.message == "vfs.mode"
+}
+
+proc test_device_bus_probe_core() -> bool {
+  let out = api__device_probe("core-bus", 0)
+
+  if out.status != api__ApiStatus.Ok {
+    give false
+  }
+
+  give out.message == "device.probe:ok"
+}
+
+proc test_device_bus_probe_storage() -> bool {
+  let out = api__device_probe("storage-bus", 1)
+
+  if out.status != api__ApiStatus.Ok {
+    give false
+  }
+
+  give out.message == "device.probe:ok"
+}
+
+proc test_device_bus_probe_network() -> bool {
+  let out = api__device_probe("fabric-bus", 2)
+
+  if out.status != api__ApiStatus.Ok {
+    give false
+  }
+
+  give out.message == "device.probe:ok"
+}
+
+proc test_device_probe_rejects_negative_slot() -> bool {
+  let out = api__device_probe("core-bus", -1)
+
+  if out.status != api__ApiStatus.Failed {
+    give false
+  }
+
+  give out.message == "device.slot"
+}
+
+proc test_driver_attach_console() -> bool {
+  let out = api__driver_attach("console", "core-bus", 0)
+
+  if out.status != api__ApiStatus.Ok {
+    give false
+  }
+
+  give out.message == "driver.attach:ok"
+}
+
+proc test_driver_attach_timer() -> bool {
+  let out = api__driver_attach("timer", "core-bus", 1)
+
+  if out.status != api__ApiStatus.Ok {
+    give false
+  }
+
+  give out.message == "driver.attach:ok"
+}
+
+proc test_driver_attach_storage() -> bool {
+  let out = api__driver_attach("block", "storage-bus", 0)
+
+  if out.status != api__ApiStatus.Ok {
+    give false
+  }
+
+  give out.message == "driver.attach:ok"
+}
+
+proc test_driver_rejects_empty_driver() -> bool {
+  let out = api__driver_attach("", "core-bus", 0)
+
+  if out.status != api__ApiStatus.Failed {
+    give false
+  }
+
+  give out.message == "driver.name"
+}
+
+proc test_security_policy_default() -> bool {
+  let out = api__security_policy_load("default")
+
+  if out.status != api__ApiStatus.Ok {
+    give false
+  }
+
+  give out.message == "security.policy:ok"
+}
+
+proc test_security_policy_locked() -> bool {
+  let out = api__security_policy_load("locked")
+
+  if out.status != api__ApiStatus.Ok {
+    give false
+  }
+
+  give out.message == "security.policy:ok"
+}
+
+proc test_security_policy_rejects_unknown() -> bool {
+  let out = api__security_policy_load("unknown")
+
+  if out.status != api__ApiStatus.Failed {
+    give false
+  }
+
+  give out.message == "security.policy"
+}
+
+proc test_capability_kernel_read() -> bool {
+  give api__capability_check("kernel", "read") == true
+}
+
+proc test_capability_kernel_write() -> bool {
+  give api__capability_check("kernel", "write") == true
+}
+
+proc test_capability_guest_write_kernel() -> bool {
+  give api__capability_check("guest", "write-kernel") == false
+}
+
+proc test_capability_guest_read_public() -> bool {
+  give api__capability_check("guest", "read-public") == true
+}
+
+proc test_syscall_table_has_exit() -> bool {
+  give api__syscall_known("exit") == true
+}
+
+proc test_syscall_table_has_write() -> bool {
+  give api__syscall_known("write") == true
+}
+
+proc test_syscall_table_rejects_unknown() -> bool {
+  give api__syscall_known("teleport") == false
+}
+
+proc test_syscall_number_stable_exit() -> bool {
+  give api__syscall_number("exit") == 1
+}
+
+proc test_syscall_number_stable_write() -> bool {
+  give api__syscall_number("write") == 2
+}
+
+proc test_syscall_number_unknown() -> bool {
+  give api__syscall_number("unknown") == 0
+}
+
+proc test_clock_monotonic_nonzero() -> bool {
+  give api__clock_now_ms("mono") >= 0
+}
+
+proc test_clock_rejects_unknown() -> bool {
+  give api__clock_now_ms("unknown") == -1
+}
+
+proc test_event_route_boot() -> bool {
+  let out = api__event_route("boot.ready", "init")
+
+  if out.status != api__ApiStatus.Ok {
+    give false
+  }
+
+  give out.message == "event.route:ok"
+}
+
+proc test_event_route_device() -> bool {
+  let out = api__event_route("device.ready", "supervisor")
+
+  if out.status != api__ApiStatus.Ok {
+    give false
+  }
+
+  give out.message == "event.route:ok"
+}
+
+proc test_event_rejects_empty_topic() -> bool {
+  let out = api__event_route("", "init")
+
+  if out.status != api__ApiStatus.Failed {
+    give false
+  }
+
+  give out.message == "event.topic"
+}
+
+proc test_event_rejects_empty_target() -> bool {
+  let out = api__event_route("boot.ready", "")
+
+  if out.status != api__ApiStatus.Failed {
+    give false
+  }
+
+  give out.message == "event.target"
+}
+
+proc test_network_stack_loopback() -> bool {
+  let out = api__network_iface_config("loop", "127.0.0.1", 8)
+
+  if out.status != api__ApiStatus.Ok {
+    give false
+  }
+
+  give out.message == "net.iface:ok"
+}
+
+proc test_network_stack_local() -> bool {
+  let out = api__network_iface_config("local0", "10.0.0.2", 24)
+
+  if out.status != api__ApiStatus.Ok {
+    give false
+  }
+
+  give out.message == "net.iface:ok"
+}
+
+proc test_network_rejects_bad_prefix() -> bool {
+  let out = api__network_iface_config("local0", "10.0.0.2", 99)
+
+  if out.status != api__ApiStatus.Failed {
+    give false
+  }
+
+  give out.message == "net.prefix"
+}
+
+proc test_network_rejects_empty_iface() -> bool {
+  let out = api__network_iface_config("", "10.0.0.2", 24)
+
+  if out.status != api__ApiStatus.Failed {
+    give false
+  }
+
+  give out.message == "net.iface"
+}
+
+proc test_storage_volume_root() -> bool {
+  let out = api__storage_volume_check("root", 1048576, true)
+
+  if out.status != api__ApiStatus.Ok {
+    give false
+  }
+
+  give out.message == "storage.volume:ok"
+}
+
+proc test_storage_volume_data() -> bool {
+  let out = api__storage_volume_check("data", 8388608, false)
+
+  if out.status != api__ApiStatus.Ok {
+    give false
+  }
+
+  give out.message == "storage.volume:ok"
+}
+
+proc test_storage_rejects_tiny_volume() -> bool {
+  let out = api__storage_volume_check("tiny", 512, false)
+
+  if out.status != api__ApiStatus.Failed {
+    give false
+  }
+
+  give out.message == "storage.size"
+}
+
+proc test_storage_rejects_empty_name() -> bool {
+  let out = api__storage_volume_check("", 4096, false)
+
+  if out.status != api__ApiStatus.Failed {
+    give false
+  }
+
+  give out.message == "storage.name"
+}
+
+proc test_loader_accepts_core_image() -> bool {
+  let out = api__loader_validate_image("core.img", 65536, "kernel")
+
+  if out.status != api__ApiStatus.Ok {
+    give false
+  }
+
+  give out.message == "loader.image:ok"
+}
+
+proc test_loader_accepts_init_image() -> bool {
+  let out = api__loader_validate_image("init.img", 32768, "user")
+
+  if out.status != api__ApiStatus.Ok {
+    give false
+  }
+
+  give out.message == "loader.image:ok"
+}
+
+proc test_loader_rejects_empty_image() -> bool {
+  let out = api__loader_validate_image("", 32768, "user")
+
+  if out.status != api__ApiStatus.Failed {
+    give false
+  }
+
+  give out.message == "loader.name"
+}
+
+proc test_loader_rejects_zero_size() -> bool {
+  let out = api__loader_validate_image("core.img", 0, "kernel")
+
+  if out.status != api__ApiStatus.Failed {
+    give false
+  }
+
+  give out.message == "loader.size"
+}
+
+proc test_loader_rejects_unknown_domain() -> bool {
+  let out = api__loader_validate_image("core.img", 65536, "ghost")
+
+  if out.status != api__ApiStatus.Failed {
+    give false
+  }
+
+  give out.message == "loader.domain"
+}
+
+proc test_audit_boot_event() -> bool {
+  let out = api__audit_record("boot", "ready", 1)
+
+  if out.status != api__ApiStatus.Ok {
+    give false
+  }
+
+  give out.message == "audit.record:ok"
+}
+
+proc test_audit_security_event() -> bool {
+  let out = api__audit_record("security", "policy-loaded", 2)
+
+  if out.status != api__ApiStatus.Ok {
+    give false
+  }
+
+  give out.message == "audit.record:ok"
+}
+
+proc test_audit_rejects_empty_category() -> bool {
+  let out = api__audit_record("", "ready", 1)
+
+  if out.status != api__ApiStatus.Failed {
+    give false
+  }
+
+  give out.message == "audit.category"
+}
+
+proc test_audit_rejects_empty_message() -> bool {
+  let out = api__audit_record("boot", "", 1)
+
+  if out.status != api__ApiStatus.Failed {
+    give false
+  }
+
+  give out.message == "audit.message"
+}
+
+proc test_diagnostics_level_info() -> bool {
+  give api__diagnostics_level_value("info") == 1
+}
+
+proc test_diagnostics_level_warn() -> bool {
+  give api__diagnostics_level_value("warn") == 2
+}
+
+proc test_diagnostics_level_error() -> bool {
+  give api__diagnostics_level_value("error") == 3
+}
+
+proc test_diagnostics_level_unknown() -> bool {
+  give api__diagnostics_level_value("unknown") == 0
+}
+
+proc test_panic_format_basic() -> bool {
+  give api__panic_format("core", "fault") == "panic:core:fault"
+}
+
+proc test_panic_format_memory() -> bool {
+  give api__panic_format("memory", "overflow") == "panic:memory:overflow"
+}
+
+proc test_panic_format_security() -> bool {
+  give api__panic_format("security", "denied") == "panic:security:denied"
+}
+
+proc test_config_matrix_dev() -> bool {
+  let cfg = make_cfg(TEST_PROFILE_DEV, false, false)
+
+  if not test_bootstrap_accepts_dev() {
+    give false
+  }
+
+  let health = api__api_health(cfg)
+
+  if health.status != api__ApiStatus.Ok {
+    give false
+  }
+
   give true
+}
+
+proc test_config_matrix_ci() -> bool {
+  let cfg = make_cfg(TEST_PROFILE_CI, true, true)
+
+  if not test_health_strict_trace() {
+    give false
+  }
+
+  let boot = api__api_bootstrap(cfg)
+
+  if boot.status != api__ApiStatus.Ok {
+    give false
+  }
+
+  give true
+}
+
+proc test_config_matrix_prod() -> bool {
+  let cfg = make_cfg(TEST_PROFILE_PROD, true, false)
+  let boot = api__api_bootstrap(cfg)
+
+  if boot.status != api__ApiStatus.Ok {
+    give false
+  }
+
+  let health = api__api_health(cfg)
+
+  if health.status != api__ApiStatus.Ok {
+    give false
+  }
+
+  give true
+}
+
+proc test_suite_boot() -> bool {
+  if not test_bootstrap_accepts_dev() { give false }
+  if not test_bootstrap_accepts_ci() { give false }
+  if not test_bootstrap_accepts_prod_strict() { give false }
+  if not test_bootstrap_rejects_unknown_profile() { give false }
+  if not test_health_dev_plain() { give false }
+  if not test_health_strict() { give false }
+  if not test_health_trace() { give false }
+  if not test_health_strict_trace() { give false }
+  if not test_kernel_boot_stage_zero() { give false }
+  if not test_kernel_boot_stage_memory() { give false }
+  if not test_kernel_boot_stage_scheduler() { give false }
+  if not test_kernel_boot_stage_devices() { give false }
+  if not test_kernel_boot_stage_userspace() { give false }
+  give true
+}
+
+proc test_suite_memory() -> bool {
+  if not test_memory_page_size() { give false }
+  if not test_memory_align_page_zero() { give false }
+  if not test_memory_align_page_one() { give false }
+  if not test_memory_align_page_exact() { give false }
+  if not test_memory_region_accepts_normal() { give false }
+  if not test_memory_region_rejects_zero_size() { give false }
+  if not test_memory_region_rejects_unaligned_base() { give false }
+  if not test_memory_region_rejects_unaligned_size() { give false }
+  if not test_allocator_boot_pool() { give false }
+  if not test_allocator_small_pool() { give false }
+  if not test_allocator_large_pool() { give false }
+  if not test_allocator_rejects_zero_unit() { give false }
+  give true
+}
+
+proc test_suite_scheduler_task_ipc() -> bool {
+  if not test_scheduler_quantum_min() { give false }
+  if not test_scheduler_quantum_batch() { give false }
+  if not test_scheduler_quantum_idle() { give false }
+  if not test_scheduler_rejects_unknown_class() { give false }
+  if not test_task_create_init() { give false }
+  if not test_task_rejects_empty_name() { give false }
+  if not test_task_rejects_bad_priority() { give false }
+  if not test_ipc_channel_create() { give false }
+  if not test_ipc_channel_rejects_zero_depth() { give false }
+  if not test_ipc_channel_rejects_empty_name() { give false }
+  give true
+}
+
+proc test_suite_vfs_device_driver() -> bool {
+  if not test_vfs_mount_root() { give false }
+  if not test_vfs_mount_runtime() { give false }
+  if not test_vfs_rejects_relative_path() { give false }
+  if not test_vfs_rejects_unknown_mode() { give false }
+  if not test_device_bus_probe_core() { give false }
+  if not test_device_bus_probe_storage() { give false }
+  if not test_device_bus_probe_network() { give false }
+  if not test_device_probe_rejects_negative_slot() { give false }
+  if not test_driver_attach_console() { give false }
+  if not test_driver_attach_timer() { give false }
+  if not test_driver_attach_storage() { give false }
+  if not test_driver_rejects_empty_driver() { give false }
+  give true
+}
+
+proc test_suite_security_syscall() -> bool {
+  if not test_security_policy_default() { give false }
+  if not test_security_policy_locked() { give false }
+  if not test_security_policy_rejects_unknown() { give false }
+  if not test_capability_kernel_read() { give false }
+  if not test_capability_kernel_write() { give false }
+  if not test_capability_guest_write_kernel() { give false }
+  if not test_capability_guest_read_public() { give false }
+  if not test_syscall_table_has_exit() { give false }
+  if not test_syscall_table_has_write() { give false }
+  if not test_syscall_table_rejects_unknown() { give false }
+  if not test_syscall_number_stable_exit() { give false }
+  if not test_syscall_number_stable_write() { give false }
+  if not test_syscall_number_unknown() { give false }
+  give true
+}
+
+proc test_suite_services() -> bool {
+  if not test_clock_monotonic_nonzero() { give false }
+  if not test_clock_rejects_unknown() { give false }
+  if not test_event_route_boot() { give false }
+  if not test_event_route_device() { give false }
+  if not test_event_rejects_empty_topic() { give false }
+  if not test_event_rejects_empty_target() { give false }
+  if not test_network_stack_loopback() { give false }
+  if not test_network_stack_local() { give false }
+  if not test_network_rejects_bad_prefix() { give false }
+  if not test_network_rejects_empty_iface() { give false }
+  if not test_storage_volume_root() { give false }
+  if not test_storage_volume_data() { give false }
+  if not test_storage_rejects_tiny_volume() { give false }
+  if not test_storage_rejects_empty_name() { give false }
+  give true
+}
+
+proc test_suite_loader_audit_diag() -> bool {
+  if not test_loader_accepts_core_image() { give false }
+  if not test_loader_accepts_init_image() { give false }
+  if not test_loader_rejects_empty_image() { give false }
+  if not test_loader_rejects_zero_size() { give false }
+  if not test_loader_rejects_unknown_domain() { give false }
+  if not test_audit_boot_event() { give false }
+  if not test_audit_security_event() { give false }
+  if not test_audit_rejects_empty_category() { give false }
+  if not test_audit_rejects_empty_message() { give false }
+  if not test_diagnostics_level_info() { give false }
+  if not test_diagnostics_level_warn() { give false }
+  if not test_diagnostics_level_error() { give false }
+  if not test_diagnostics_level_unknown() { give false }
+  if not test_panic_format_basic() { give false }
+  if not test_panic_format_memory() { give false }
+  if not test_panic_format_security() { give false }
+  give true
+}
+
+proc test_suite_matrix() -> bool {
+  if not test_config_matrix_dev() { give false }
+  if not test_config_matrix_ci() { give false }
+  if not test_config_matrix_prod() { give false }
+  give true
+}
+
+proc test_suite_root() -> bool {
+  if not test_suite_boot() { give false }
+  if not test_suite_memory() { give false }
+  if not test_suite_scheduler_task_ipc() { give false }
+  if not test_suite_vfs_device_driver() { give false }
+  if not test_suite_security_syscall() { give false }
+  if not test_suite_services() { give false }
+  if not test_suite_loader_audit_diag() { give false }
+  if not test_suite_matrix() { give false }
+
+  give true
+}
+
+entry tests at tests {
+  let ok = test_suite_root()
+
+  if ok {
+    emit "tests:ok"
+    return 0
+  }
+
+  emit "tests:failed"
+  return 1
 }
