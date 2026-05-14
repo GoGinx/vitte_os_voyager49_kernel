@@ -1,0 +1,3 @@
+policy dtb {
+    allow memory.read
+}

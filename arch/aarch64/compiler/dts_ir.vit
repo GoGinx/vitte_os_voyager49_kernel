@@ -1,0 +1,25 @@
+space arch/aarch64/boot/dtb/compiler/dts_ir
+
+form CompilerState {
+    phase: string
+    valid: bool
+}
+
+proc initialize() -> CompilerState {
+    give CompilerState {
+        phase: "dts_ir",
+        valid: true
+    }
+}
+
+proc compile() {
+    emit "dts_ir compile"
+}
+
+proc optimize() {
+    emit "dts_ir optimize"
+}
+
+proc debug() {
+    emit "dts_ir debug"
+}

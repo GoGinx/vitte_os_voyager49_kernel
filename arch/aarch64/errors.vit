@@ -1,5 +1,5 @@
-space arch/aarch64/errors
+space arch/aarch64/boot/dtb/errors
 
-<<< auto generated >>>
-
-share all
+proc initialize() {
+    emit "errors initialized"
+}

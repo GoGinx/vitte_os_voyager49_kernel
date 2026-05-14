@@ -1,0 +1,18 @@
+space arch/aarch64/boot/dtb/vendors/amazon
+
+form VendorBoard {
+    name: string
+    compatible: string
+}
+
+proc initialize() {
+    emit "amazon initialized"
+}
+
+proc probe() {
+    emit "amazon probe"
+}
+
+proc register() {
+    emit "amazon register"
+}

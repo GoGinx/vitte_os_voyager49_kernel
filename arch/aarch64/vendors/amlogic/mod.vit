@@ -1,0 +1,18 @@
+space arch/aarch64/boot/dtb/vendors/amlogic
+
+form VendorBoard {
+    name: string
+    compatible: string
+}
+
+proc initialize() {
+    emit "amlogic initialized"
+}
+
+proc probe() {
+    emit "amlogic probe"
+}
+
+proc register() {
+    emit "amlogic register"
+}

@@ -1,0 +1,5 @@
+space arch/aarch64/boot/dtb/fuzz
+
+proc initialize() {
+    emit "fuzz initialized"
+}

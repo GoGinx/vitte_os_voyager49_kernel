@@ -1,0 +1,31 @@
+space arch/aarch64/boot/dtb/runtime/discovery
+
+form RuntimeState {
+    initialized: bool
+    active: bool
+    subsystem: string
+}
+
+proc initialize() -> RuntimeState {
+    give RuntimeState {
+        initialized: true,
+        active: true,
+        subsystem: "discovery"
+    }
+}
+
+proc start() {
+    emit "discovery start"
+}
+
+proc stop() {
+    emit "discovery stop"
+}
+
+proc trace() {
+    emit "discovery trace"
+}
+
+proc recover() {
+    emit "discovery recover"
+}

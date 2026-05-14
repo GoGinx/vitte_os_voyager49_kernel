@@ -1,5 +1,5 @@
-space arch/aarch64/init
+space arch/aarch64/boot/dtb/init
 
-<<< auto generated >>>
-
-share all
+proc initialize() {
+    emit "init initialized"
+}

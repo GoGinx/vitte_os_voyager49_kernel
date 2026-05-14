@@ -1,0 +1,31 @@
+space arch/aarch64/boot/dtb/runtime/memory_map
+
+form RuntimeState {
+    initialized: bool
+    active: bool
+    subsystem: string
+}
+
+proc initialize() -> RuntimeState {
+    give RuntimeState {
+        initialized: true,
+        active: true,
+        subsystem: "memory_map"
+    }
+}
+
+proc start() {
+    emit "memory_map start"
+}
+
+proc stop() {
+    emit "memory_map stop"
+}
+
+proc trace() {
+    emit "memory_map trace"
+}
+
+proc recover() {
+    emit "memory_map recover"
+}

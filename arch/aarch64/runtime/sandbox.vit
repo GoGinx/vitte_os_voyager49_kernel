@@ -1,0 +1,31 @@
+space arch/aarch64/boot/dtb/runtime/sandbox
+
+form RuntimeState {
+    initialized: bool
+    active: bool
+    subsystem: string
+}
+
+proc initialize() -> RuntimeState {
+    give RuntimeState {
+        initialized: true,
+        active: true,
+        subsystem: "sandbox"
+    }
+}
+
+proc start() {
+    emit "sandbox start"
+}
+
+proc stop() {
+    emit "sandbox stop"
+}
+
+proc trace() {
+    emit "sandbox trace"
+}
+
+proc recover() {
+    emit "sandbox recover"
+}

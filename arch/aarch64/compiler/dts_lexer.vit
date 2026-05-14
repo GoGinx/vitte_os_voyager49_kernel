@@ -1,0 +1,25 @@
+space arch/aarch64/boot/dtb/compiler/dts_lexer
+
+form CompilerState {
+    phase: string
+    valid: bool
+}
+
+proc initialize() -> CompilerState {
+    give CompilerState {
+        phase: "dts_lexer",
+        valid: true
+    }
+}
+
+proc compile() {
+    emit "dts_lexer compile"
+}
+
+proc optimize() {
+    emit "dts_lexer optimize"
+}
+
+proc debug() {
+    emit "dts_lexer debug"
+}

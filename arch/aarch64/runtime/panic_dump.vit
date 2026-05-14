@@ -1,0 +1,31 @@
+space arch/aarch64/boot/dtb/runtime/panic_dump
+
+form RuntimeState {
+    initialized: bool
+    active: bool
+    subsystem: string
+}
+
+proc initialize() -> RuntimeState {
+    give RuntimeState {
+        initialized: true,
+        active: true,
+        subsystem: "panic_dump"
+    }
+}
+
+proc start() {
+    emit "panic_dump start"
+}
+
+proc stop() {
+    emit "panic_dump stop"
+}
+
+proc trace() {
+    emit "panic_dump trace"
+}
+
+proc recover() {
+    emit "panic_dump recover"
+}

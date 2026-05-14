@@ -1,0 +1,1 @@
+machine qemu { cpus 4 ram 2gb }

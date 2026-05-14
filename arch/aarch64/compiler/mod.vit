@@ -1,0 +1,25 @@
+space arch/aarch64/boot/dtb/compiler/mod
+
+form CompilerState {
+    phase: string
+    valid: bool
+}
+
+proc initialize() -> CompilerState {
+    give CompilerState {
+        phase: "mod",
+        valid: true
+    }
+}
+
+proc compile() {
+    emit "mod compile"
+}
+
+proc optimize() {
+    emit "mod optimize"
+}
+
+proc debug() {
+    emit "mod debug"
+}

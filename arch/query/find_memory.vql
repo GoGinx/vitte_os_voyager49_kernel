@@ -1,0 +1,2 @@
+select memory
+where size > 1024mb

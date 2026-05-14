@@ -1,0 +1,3 @@
+.fn.boot.vmware.
+    .call.initialize.
+.end.

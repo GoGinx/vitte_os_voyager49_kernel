@@ -1,0 +1,21 @@
+space arch/aarch64/boot/dtb/validator/fuzzing
+
+form ValidationResult {
+    valid: bool
+    reason: string
+}
+
+proc validate() -> ValidationResult {
+    give ValidationResult {
+        valid: true,
+        reason: "fuzzing ok"
+    }
+}
+
+proc repair() {
+    emit "fuzzing repair"
+}
+
+proc diagnostics() {
+    emit "fuzzing diagnostics"
+}

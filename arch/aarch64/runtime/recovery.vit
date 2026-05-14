@@ -1,0 +1,31 @@
+space arch/aarch64/boot/dtb/runtime/recovery
+
+form RuntimeState {
+    initialized: bool
+    active: bool
+    subsystem: string
+}
+
+proc initialize() -> RuntimeState {
+    give RuntimeState {
+        initialized: true,
+        active: true,
+        subsystem: "recovery"
+    }
+}
+
+proc start() {
+    emit "recovery start"
+}
+
+proc stop() {
+    emit "recovery stop"
+}
+
+proc trace() {
+    emit "recovery trace"
+}
+
+proc recover() {
+    emit "recovery recover"
+}

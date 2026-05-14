@@ -1,0 +1,3 @@
+.fn.boot.socionext.
+    .call.initialize.
+.end.

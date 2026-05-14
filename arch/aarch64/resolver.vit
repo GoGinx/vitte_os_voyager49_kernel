@@ -1,0 +1,5 @@
+space arch/aarch64/boot/dtb/resolver
+
+proc initialize() {
+    emit "resolver initialized"
+}

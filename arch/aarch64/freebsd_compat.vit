@@ -1,0 +1,5 @@
+space arch/aarch64/boot/dtb/freebsd_compat
+
+proc initialize() {
+    emit "freebsd_compat initialized"
+}

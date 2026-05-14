@@ -1,0 +1,21 @@
+space arch/aarch64/boot/dtb/validator/compatible
+
+form ValidationResult {
+    valid: bool
+    reason: string
+}
+
+proc validate() -> ValidationResult {
+    give ValidationResult {
+        valid: true,
+        reason: "compatible ok"
+    }
+}
+
+proc repair() {
+    emit "compatible repair"
+}
+
+proc diagnostics() {
+    emit "compatible diagnostics"
+}

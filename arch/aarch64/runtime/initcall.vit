@@ -1,0 +1,31 @@
+space arch/aarch64/boot/dtb/runtime/initcall
+
+form RuntimeState {
+    initialized: bool
+    active: bool
+    subsystem: string
+}
+
+proc initialize() -> RuntimeState {
+    give RuntimeState {
+        initialized: true,
+        active: true,
+        subsystem: "initcall"
+    }
+}
+
+proc start() {
+    emit "initcall start"
+}
+
+proc stop() {
+    emit "initcall stop"
+}
+
+proc trace() {
+    emit "initcall trace"
+}
+
+proc recover() {
+    emit "initcall recover"
+}

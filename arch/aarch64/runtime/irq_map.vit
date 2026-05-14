@@ -1,0 +1,31 @@
+space arch/aarch64/boot/dtb/runtime/irq_map
+
+form RuntimeState {
+    initialized: bool
+    active: bool
+    subsystem: string
+}
+
+proc initialize() -> RuntimeState {
+    give RuntimeState {
+        initialized: true,
+        active: true,
+        subsystem: "irq_map"
+    }
+}
+
+proc start() {
+    emit "irq_map start"
+}
+
+proc stop() {
+    emit "irq_map stop"
+}
+
+proc trace() {
+    emit "irq_map trace"
+}
+
+proc recover() {
+    emit "irq_map recover"
+}

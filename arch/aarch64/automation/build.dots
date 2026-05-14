@@ -1,0 +1,4 @@
+.fn.build.
+    .call.compile.dtb.
+    .call.link.kernel.
+.end.

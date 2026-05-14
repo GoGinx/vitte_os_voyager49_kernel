@@ -1,0 +1,18 @@
+space arch/aarch64/boot/dtb/vendors/xilinx
+
+form VendorBoard {
+    name: string
+    compatible: string
+}
+
+proc initialize() {
+    emit "xilinx initialized"
+}
+
+proc probe() {
+    emit "xilinx probe"
+}
+
+proc register() {
+    emit "xilinx register"
+}

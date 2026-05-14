@@ -1,0 +1,2 @@
+fn schedule:
+    call scheduler.boot

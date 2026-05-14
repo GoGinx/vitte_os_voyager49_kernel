@@ -1,0 +1,18 @@
+space arch/aarch64/boot/dtb/vendors/broadcom
+
+form VendorBoard {
+    name: string
+    compatible: string
+}
+
+proc initialize() {
+    emit "broadcom initialized"
+}
+
+proc probe() {
+    emit "broadcom probe"
+}
+
+proc register() {
+    emit "broadcom register"
+}

@@ -1,0 +1,21 @@
+space arch/aarch64/boot/dtb/validator/usb
+
+form ValidationResult {
+    valid: bool
+    reason: string
+}
+
+proc validate() -> ValidationResult {
+    give ValidationResult {
+        valid: true,
+        reason: "usb ok"
+    }
+}
+
+proc repair() {
+    emit "usb repair"
+}
+
+proc diagnostics() {
+    emit "usb diagnostics"
+}

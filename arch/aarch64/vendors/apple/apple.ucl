@@ -1,0 +1,5 @@
+board apple {
+    cpu generic
+    memory 4096mb
+    compatible "apple"
+}

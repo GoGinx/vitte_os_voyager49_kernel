@@ -1,0 +1,25 @@
+space arch/aarch64/boot/dtb/compiler/dtb_optimizer
+
+form CompilerState {
+    phase: string
+    valid: bool
+}
+
+proc initialize() -> CompilerState {
+    give CompilerState {
+        phase: "dtb_optimizer",
+        valid: true
+    }
+}
+
+proc compile() {
+    emit "dtb_optimizer compile"
+}
+
+proc optimize() {
+    emit "dtb_optimizer optimize"
+}
+
+proc debug() {
+    emit "dtb_optimizer debug"
+}

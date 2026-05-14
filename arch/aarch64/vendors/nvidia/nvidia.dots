@@ -1,0 +1,3 @@
+.fn.boot.nvidia.
+    .call.initialize.
+.end.

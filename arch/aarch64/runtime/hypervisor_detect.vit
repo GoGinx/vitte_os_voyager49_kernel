@@ -1,0 +1,31 @@
+space arch/aarch64/boot/dtb/runtime/hypervisor_detect
+
+form RuntimeState {
+    initialized: bool
+    active: bool
+    subsystem: string
+}
+
+proc initialize() -> RuntimeState {
+    give RuntimeState {
+        initialized: true,
+        active: true,
+        subsystem: "hypervisor_detect"
+    }
+}
+
+proc start() {
+    emit "hypervisor_detect start"
+}
+
+proc stop() {
+    emit "hypervisor_detect stop"
+}
+
+proc trace() {
+    emit "hypervisor_detect trace"
+}
+
+proc recover() {
+    emit "hypervisor_detect recover"
+}

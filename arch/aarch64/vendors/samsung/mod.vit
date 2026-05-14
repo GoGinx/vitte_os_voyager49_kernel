@@ -1,0 +1,18 @@
+space arch/aarch64/boot/dtb/vendors/samsung
+
+form VendorBoard {
+    name: string
+    compatible: string
+}
+
+proc initialize() {
+    emit "samsung initialized"
+}
+
+proc probe() {
+    emit "samsung probe"
+}
+
+proc register() {
+    emit "samsung register"
+}

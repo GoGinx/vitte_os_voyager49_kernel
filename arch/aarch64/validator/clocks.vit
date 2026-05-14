@@ -1,0 +1,21 @@
+space arch/aarch64/boot/dtb/validator/clocks
+
+form ValidationResult {
+    valid: bool
+    reason: string
+}
+
+proc validate() -> ValidationResult {
+    give ValidationResult {
+        valid: true,
+        reason: "clocks ok"
+    }
+}
+
+proc repair() {
+    emit "clocks repair"
+}
+
+proc diagnostics() {
+    emit "clocks diagnostics"
+}

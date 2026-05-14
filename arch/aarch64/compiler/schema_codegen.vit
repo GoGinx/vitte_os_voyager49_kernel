@@ -1,0 +1,25 @@
+space arch/aarch64/boot/dtb/compiler/schema_codegen
+
+form CompilerState {
+    phase: string
+    valid: bool
+}
+
+proc initialize() -> CompilerState {
+    give CompilerState {
+        phase: "schema_codegen",
+        valid: true
+    }
+}
+
+proc compile() {
+    emit "schema_codegen compile"
+}
+
+proc optimize() {
+    emit "schema_codegen optimize"
+}
+
+proc debug() {
+    emit "schema_codegen debug"
+}

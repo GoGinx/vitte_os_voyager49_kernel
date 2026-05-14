@@ -1,0 +1,31 @@
+space arch/aarch64/boot/dtb/runtime/device_match
+
+form RuntimeState {
+    initialized: bool
+    active: bool
+    subsystem: string
+}
+
+proc initialize() -> RuntimeState {
+    give RuntimeState {
+        initialized: true,
+        active: true,
+        subsystem: "device_match"
+    }
+}
+
+proc start() {
+    emit "device_match start"
+}
+
+proc stop() {
+    emit "device_match stop"
+}
+
+proc trace() {
+    emit "device_match trace"
+}
+
+proc recover() {
+    emit "device_match recover"
+}

@@ -1,0 +1,18 @@
+space arch/aarch64/boot/dtb/vendors/nvidia
+
+form VendorBoard {
+    name: string
+    compatible: string
+}
+
+proc initialize() {
+    emit "nvidia initialized"
+}
+
+proc probe() {
+    emit "nvidia probe"
+}
+
+proc register() {
+    emit "nvidia register"
+}

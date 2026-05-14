@@ -1,0 +1,21 @@
+space arch/aarch64/boot/dtb/validator/memory_regions
+
+form ValidationResult {
+    valid: bool
+    reason: string
+}
+
+proc validate() -> ValidationResult {
+    give ValidationResult {
+        valid: true,
+        reason: "memory_regions ok"
+    }
+}
+
+proc repair() {
+    emit "memory_regions repair"
+}
+
+proc diagnostics() {
+    emit "memory_regions diagnostics"
+}

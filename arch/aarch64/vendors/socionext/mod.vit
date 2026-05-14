@@ -1,0 +1,18 @@
+space arch/aarch64/boot/dtb/vendors/socionext
+
+form VendorBoard {
+    name: string
+    compatible: string
+}
+
+proc initialize() {
+    emit "socionext initialized"
+}
+
+proc probe() {
+    emit "socionext probe"
+}
+
+proc register() {
+    emit "socionext register"
+}

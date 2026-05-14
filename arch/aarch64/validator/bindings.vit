@@ -1,0 +1,21 @@
+space arch/aarch64/boot/dtb/validator/bindings
+
+form ValidationResult {
+    valid: bool
+    reason: string
+}
+
+proc validate() -> ValidationResult {
+    give ValidationResult {
+        valid: true,
+        reason: "bindings ok"
+    }
+}
+
+proc repair() {
+    emit "bindings repair"
+}
+
+proc diagnostics() {
+    emit "bindings diagnostics"
+}

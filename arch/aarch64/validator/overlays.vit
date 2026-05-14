@@ -1,0 +1,21 @@
+space arch/aarch64/boot/dtb/validator/overlays
+
+form ValidationResult {
+    valid: bool
+    reason: string
+}
+
+proc validate() -> ValidationResult {
+    give ValidationResult {
+        valid: true,
+        reason: "overlays ok"
+    }
+}
+
+proc repair() {
+    emit "overlays repair"
+}
+
+proc diagnostics() {
+    emit "overlays diagnostics"
+}

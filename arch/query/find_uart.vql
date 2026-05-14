@@ -1,0 +1,2 @@
+select uart
+where compatible == "arm,pl011"
