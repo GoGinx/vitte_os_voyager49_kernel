@@ -1,0 +1,5 @@
+board allwinner {
+    cpu generic
+    memory 4096mb
+    compatible "allwinner"
+}

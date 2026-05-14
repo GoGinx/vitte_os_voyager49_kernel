@@ -1,0 +1,31 @@
+space arch/aarch64/boot/dtb/runtime/framebuffer_init
+
+form RuntimeState {
+    initialized: bool
+    active: bool
+    subsystem: string
+}
+
+proc initialize() -> RuntimeState {
+    give RuntimeState {
+        initialized: true,
+        active: true,
+        subsystem: "framebuffer_init"
+    }
+}
+
+proc start() {
+    emit "framebuffer_init start"
+}
+
+proc stop() {
+    emit "framebuffer_init stop"
+}
+
+proc trace() {
+    emit "framebuffer_init trace"
+}
+
+proc recover() {
+    emit "framebuffer_init recover"
+}

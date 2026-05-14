@@ -1,0 +1,25 @@
+space arch/aarch64/boot/dtb/compiler/dts_codegen
+
+form CompilerState {
+    phase: string
+    valid: bool
+}
+
+proc initialize() -> CompilerState {
+    give CompilerState {
+        phase: "dts_codegen",
+        valid: true
+    }
+}
+
+proc compile() {
+    emit "dts_codegen compile"
+}
+
+proc optimize() {
+    emit "dts_codegen optimize"
+}
+
+proc debug() {
+    emit "dts_codegen debug"
+}

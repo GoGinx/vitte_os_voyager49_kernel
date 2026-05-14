@@ -1,0 +1,31 @@
+space arch/aarch64/boot/dtb/runtime/pci_scan
+
+form RuntimeState {
+    initialized: bool
+    active: bool
+    subsystem: string
+}
+
+proc initialize() -> RuntimeState {
+    give RuntimeState {
+        initialized: true,
+        active: true,
+        subsystem: "pci_scan"
+    }
+}
+
+proc start() {
+    emit "pci_scan start"
+}
+
+proc stop() {
+    emit "pci_scan stop"
+}
+
+proc trace() {
+    emit "pci_scan trace"
+}
+
+proc recover() {
+    emit "pci_scan recover"
+}

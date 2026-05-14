@@ -1,0 +1,1 @@
+machine rpi4 { soc bcm2711 ram 4gb }

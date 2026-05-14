@@ -1,0 +1,21 @@
+space arch/aarch64/boot/dtb/validator/schema
+
+form ValidationResult {
+    valid: bool
+    reason: string
+}
+
+proc validate() -> ValidationResult {
+    give ValidationResult {
+        valid: true,
+        reason: "schema ok"
+    }
+}
+
+proc repair() {
+    emit "schema repair"
+}
+
+proc diagnostics() {
+    emit "schema diagnostics"
+}

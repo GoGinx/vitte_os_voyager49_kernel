@@ -1,0 +1,5 @@
+board socionext {
+    cpu generic
+    memory 4096mb
+    compatible "socionext"
+}

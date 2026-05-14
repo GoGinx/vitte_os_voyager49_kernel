@@ -1,0 +1,2 @@
+select cpu
+where cores > 1

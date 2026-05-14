@@ -1,0 +1,3 @@
+.fn.boot.hyperv.
+    .call.initialize.
+.end.

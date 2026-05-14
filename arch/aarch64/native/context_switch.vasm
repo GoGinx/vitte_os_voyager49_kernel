@@ -1,0 +1,1 @@
+msr sp_el1, x0

@@ -1,0 +1,25 @@
+space arch/aarch64/boot/dtb/compiler/dtb_writer
+
+form CompilerState {
+    phase: string
+    valid: bool
+}
+
+proc initialize() -> CompilerState {
+    give CompilerState {
+        phase: "dtb_writer",
+        valid: true
+    }
+}
+
+proc compile() {
+    emit "dtb_writer compile"
+}
+
+proc optimize() {
+    emit "dtb_writer optimize"
+}
+
+proc debug() {
+    emit "dtb_writer debug"
+}

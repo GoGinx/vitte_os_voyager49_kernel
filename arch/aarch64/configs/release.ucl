@@ -1,0 +1,1 @@
+mode release { optimize "O3" }

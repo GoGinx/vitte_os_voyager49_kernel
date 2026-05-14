@@ -1,0 +1,5 @@
+space arch/aarch64/boot/dtb/serializer
+
+proc initialize() {
+    emit "serializer initialized"
+}

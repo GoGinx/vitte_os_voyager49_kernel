@@ -1,0 +1,2 @@
+select device
+where state == "online"

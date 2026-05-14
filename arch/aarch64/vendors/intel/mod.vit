@@ -1,0 +1,18 @@
+space arch/aarch64/boot/dtb/vendors/intel
+
+form VendorBoard {
+    name: string
+    compatible: string
+}
+
+proc initialize() {
+    emit "intel initialized"
+}
+
+proc probe() {
+    emit "intel probe"
+}
+
+proc register() {
+    emit "intel register"
+}

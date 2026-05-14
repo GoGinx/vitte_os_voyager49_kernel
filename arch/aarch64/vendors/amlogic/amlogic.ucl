@@ -1,0 +1,5 @@
+board amlogic {
+    cpu generic
+    memory 4096mb
+    compatible "amlogic"
+}

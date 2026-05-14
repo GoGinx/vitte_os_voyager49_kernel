@@ -1,0 +1,3 @@
+.fn.boot.allwinner.
+    .call.initialize.
+.end.

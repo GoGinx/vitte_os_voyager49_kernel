@@ -1,0 +1,31 @@
+space arch/aarch64/boot/dtb/runtime/usb_scan
+
+form RuntimeState {
+    initialized: bool
+    active: bool
+    subsystem: string
+}
+
+proc initialize() -> RuntimeState {
+    give RuntimeState {
+        initialized: true,
+        active: true,
+        subsystem: "usb_scan"
+    }
+}
+
+proc start() {
+    emit "usb_scan start"
+}
+
+proc stop() {
+    emit "usb_scan stop"
+}
+
+proc trace() {
+    emit "usb_scan trace"
+}
+
+proc recover() {
+    emit "usb_scan recover"
+}

@@ -1,0 +1,1 @@
+machine rk3588 { cpus 8 }

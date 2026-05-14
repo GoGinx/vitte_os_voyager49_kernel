@@ -1,0 +1,25 @@
+space arch/aarch64/boot/dtb/compiler/dtb_rewriter
+
+form CompilerState {
+    phase: string
+    valid: bool
+}
+
+proc initialize() -> CompilerState {
+    give CompilerState {
+        phase: "dtb_rewriter",
+        valid: true
+    }
+}
+
+proc compile() {
+    emit "dtb_rewriter compile"
+}
+
+proc optimize() {
+    emit "dtb_rewriter optimize"
+}
+
+proc debug() {
+    emit "dtb_rewriter debug"
+}

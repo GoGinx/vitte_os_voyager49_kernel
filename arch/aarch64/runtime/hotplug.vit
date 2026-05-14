@@ -1,0 +1,31 @@
+space arch/aarch64/boot/dtb/runtime/hotplug
+
+form RuntimeState {
+    initialized: bool
+    active: bool
+    subsystem: string
+}
+
+proc initialize() -> RuntimeState {
+    give RuntimeState {
+        initialized: true,
+        active: true,
+        subsystem: "hotplug"
+    }
+}
+
+proc start() {
+    emit "hotplug start"
+}
+
+proc stop() {
+    emit "hotplug stop"
+}
+
+proc trace() {
+    emit "hotplug trace"
+}
+
+proc recover() {
+    emit "hotplug recover"
+}

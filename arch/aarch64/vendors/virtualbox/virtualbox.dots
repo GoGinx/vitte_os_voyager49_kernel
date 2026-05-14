@@ -1,0 +1,3 @@
+.fn.boot.virtualbox.
+    .call.initialize.
+.end.

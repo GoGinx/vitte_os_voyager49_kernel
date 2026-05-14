@@ -1,0 +1,25 @@
+space arch/aarch64/boot/dtb/compiler/dtb_profile
+
+form CompilerState {
+    phase: string
+    valid: bool
+}
+
+proc initialize() -> CompilerState {
+    give CompilerState {
+        phase: "dtb_profile",
+        valid: true
+    }
+}
+
+proc compile() {
+    emit "dtb_profile compile"
+}
+
+proc optimize() {
+    emit "dtb_profile optimize"
+}
+
+proc debug() {
+    emit "dtb_profile debug"
+}

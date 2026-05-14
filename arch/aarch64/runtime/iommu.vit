@@ -1,0 +1,31 @@
+space arch/aarch64/boot/dtb/runtime/iommu
+
+form RuntimeState {
+    initialized: bool
+    active: bool
+    subsystem: string
+}
+
+proc initialize() -> RuntimeState {
+    give RuntimeState {
+        initialized: true,
+        active: true,
+        subsystem: "iommu"
+    }
+}
+
+proc start() {
+    emit "iommu start"
+}
+
+proc stop() {
+    emit "iommu stop"
+}
+
+proc trace() {
+    emit "iommu trace"
+}
+
+proc recover() {
+    emit "iommu recover"
+}

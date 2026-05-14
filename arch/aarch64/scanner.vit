@@ -1,0 +1,5 @@
+space arch/aarch64/boot/dtb/scanner
+
+proc initialize() {
+    emit "scanner initialized"
+}

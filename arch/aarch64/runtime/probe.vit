@@ -1,0 +1,31 @@
+space arch/aarch64/boot/dtb/runtime/probe
+
+form RuntimeState {
+    initialized: bool
+    active: bool
+    subsystem: string
+}
+
+proc initialize() -> RuntimeState {
+    give RuntimeState {
+        initialized: true,
+        active: true,
+        subsystem: "probe"
+    }
+}
+
+proc start() {
+    emit "probe start"
+}
+
+proc stop() {
+    emit "probe stop"
+}
+
+proc trace() {
+    emit "probe trace"
+}
+
+proc recover() {
+    emit "probe recover"
+}

@@ -1,0 +1,31 @@
+space arch/aarch64/boot/dtb/runtime/mmio_map
+
+form RuntimeState {
+    initialized: bool
+    active: bool
+    subsystem: string
+}
+
+proc initialize() -> RuntimeState {
+    give RuntimeState {
+        initialized: true,
+        active: true,
+        subsystem: "mmio_map"
+    }
+}
+
+proc start() {
+    emit "mmio_map start"
+}
+
+proc stop() {
+    emit "mmio_map stop"
+}
+
+proc trace() {
+    emit "mmio_map trace"
+}
+
+proc recover() {
+    emit "mmio_map recover"
+}

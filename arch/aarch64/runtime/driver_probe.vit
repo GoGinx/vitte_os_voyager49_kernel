@@ -1,0 +1,31 @@
+space arch/aarch64/boot/dtb/runtime/driver_probe
+
+form RuntimeState {
+    initialized: bool
+    active: bool
+    subsystem: string
+}
+
+proc initialize() -> RuntimeState {
+    give RuntimeState {
+        initialized: true,
+        active: true,
+        subsystem: "driver_probe"
+    }
+}
+
+proc start() {
+    emit "driver_probe start"
+}
+
+proc stop() {
+    emit "driver_probe stop"
+}
+
+proc trace() {
+    emit "driver_probe trace"
+}
+
+proc recover() {
+    emit "driver_probe recover"
+}

@@ -1,0 +1,25 @@
+space arch/aarch64/boot/dtb/compiler/dts_hir
+
+form CompilerState {
+    phase: string
+    valid: bool
+}
+
+proc initialize() -> CompilerState {
+    give CompilerState {
+        phase: "dts_hir",
+        valid: true
+    }
+}
+
+proc compile() {
+    emit "dts_hir compile"
+}
+
+proc optimize() {
+    emit "dts_hir optimize"
+}
+
+proc debug() {
+    emit "dts_hir debug"
+}

@@ -1,0 +1,25 @@
+space arch/aarch64/boot/dtb/compiler/dts_parser
+
+form CompilerState {
+    phase: string
+    valid: bool
+}
+
+proc initialize() -> CompilerState {
+    give CompilerState {
+        phase: "dts_parser",
+        valid: true
+    }
+}
+
+proc compile() {
+    emit "dts_parser compile"
+}
+
+proc optimize() {
+    emit "dts_parser optimize"
+}
+
+proc debug() {
+    emit "dts_parser debug"
+}

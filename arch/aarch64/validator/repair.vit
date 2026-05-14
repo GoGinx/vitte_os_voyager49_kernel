@@ -1,0 +1,21 @@
+space arch/aarch64/boot/dtb/validator/repair
+
+form ValidationResult {
+    valid: bool
+    reason: string
+}
+
+proc validate() -> ValidationResult {
+    give ValidationResult {
+        valid: true,
+        reason: "repair ok"
+    }
+}
+
+proc repair() {
+    emit "repair repair"
+}
+
+proc diagnostics() {
+    emit "repair diagnostics"
+}

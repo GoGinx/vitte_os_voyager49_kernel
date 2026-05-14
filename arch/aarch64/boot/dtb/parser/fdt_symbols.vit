@@ -1,0 +1,27 @@
+space arch/aarch64/boot/dtb/parser/fdt_symbols
+
+form ParserState {
+    offset: u64
+    size: u64
+    valid: bool
+}
+
+proc initialize() -> ParserState {
+    give ParserState {
+        offset: 0,
+        size: 0,
+        valid: true
+    }
+}
+
+proc parse() {
+    emit "fdt_symbols parse"
+}
+
+proc validate() -> bool {
+    give true
+}
+
+proc debug() {
+    emit "fdt_symbols debug"
+}

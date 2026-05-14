@@ -1,0 +1,31 @@
+space arch/aarch64/boot/dtb/runtime/virtualization_init
+
+form RuntimeState {
+    initialized: bool
+    active: bool
+    subsystem: string
+}
+
+proc initialize() -> RuntimeState {
+    give RuntimeState {
+        initialized: true,
+        active: true,
+        subsystem: "virtualization_init"
+    }
+}
+
+proc start() {
+    emit "virtualization_init start"
+}
+
+proc stop() {
+    emit "virtualization_init stop"
+}
+
+proc trace() {
+    emit "virtualization_init trace"
+}
+
+proc recover() {
+    emit "virtualization_init recover"
+}

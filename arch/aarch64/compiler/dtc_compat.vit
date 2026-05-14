@@ -1,0 +1,25 @@
+space arch/aarch64/boot/dtb/compiler/dtc_compat
+
+form CompilerState {
+    phase: string
+    valid: bool
+}
+
+proc initialize() -> CompilerState {
+    give CompilerState {
+        phase: "dtc_compat",
+        valid: true
+    }
+}
+
+proc compile() {
+    emit "dtc_compat compile"
+}
+
+proc optimize() {
+    emit "dtc_compat optimize"
+}
+
+proc debug() {
+    emit "dtc_compat debug"
+}

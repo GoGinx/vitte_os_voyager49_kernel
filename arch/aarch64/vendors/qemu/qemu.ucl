@@ -1,0 +1,5 @@
+board qemu {
+    cpu generic
+    memory 4096mb
+    compatible "qemu"
+}

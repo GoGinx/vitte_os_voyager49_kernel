@@ -1,0 +1,2 @@
+fn optimize:
+    call optimizer.run

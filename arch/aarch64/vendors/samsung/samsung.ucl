@@ -1,0 +1,5 @@
+board samsung {
+    cpu generic
+    memory 4096mb
+    compatible "samsung"
+}
