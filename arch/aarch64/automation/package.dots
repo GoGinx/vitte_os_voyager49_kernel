@@ -1,3 +1,177 @@
-.fn.package.
-    .call.archive.release.
+<<< =========================================================
+   VitteOS Voyager49 Kernel
+   arch/aarch64/automation/package.dots
+   AArch64 intelligent kernel packaging automation
+   ========================================================= >>>
+
+.module.vitteos/voyager49/aarch64/automation/package.
+
+.use.kernel.package.
+.use.kernel.build.
+.use.kernel.guard.
+.use.kernel.trace.
+.use.kernel.telemetry.
+.use.kernel.dtb.
+.use.kernel.secureboot.
+.use.kernel.release.
+
+.set.$arch."aarch64".
+.set.$target."vitteos-voyager49-kernel".
+.set.$profile."release".
+.set.$version."0.1.0".
+.set.$build_dir."build/aarch64".
+.set.$out_dir."build/aarch64/out".
+.set.$package_dir."build/aarch64/package".
+.set.$report_dir."build/aarch64/reports"
+.set.$image."build/aarch64/out/Image".
+.set.$kernel_elf."build/aarch64/out/kernel.elf".
+.set.$dtb_dir."build/aarch64/out/dtb".
+.set.$manifest."build/aarch64/package/manifest.ucl".
+.set.$archive."build/aarch64/package/vitteos-voyager49-kernel-aarch64.tar".
+.set.$checksum."build/aarch64/package/SHA256SUMS".
+.set.$strict.true.
+
+.say."VitteOS Voyager49 AArch64 packaging started".
+
+.guard.enable.security.
+.guard.policy.kernel-package.
+.snapshot.system.tag."before-package-aarch64".
+
+.check.system.full.
+.check.image.$image.full.
+.check.symbols.$kernel_elf.
+.check.dtb.dir.$dtb_dir.
+.check.secureboot.policy.
+.check.build.artifacts.dir.$out_dir.
+
+.if.system.health.match./critical|panic|broken/i.
+    .say."Package aborted: system health critical".
+    .doctor.kernel.deep.
+    .snapshot.system.tag."package-aborted-health".
+    .ret.1.
 .end.
+
+.if.check.result.match./failed|invalid|missing/i.
+    .say."Package aborted: invalid build artifacts".
+    .show.check.errors.human.
+    .doctor.build.deep.
+    .ret.2.
+.end.
+
+.clean.package.dir.$package_dir.
+.package.prepare.dir.$package_dir.
+.package.prepare.dir.$package_dir."/boot".
+.package.prepare.dir.$package_dir."/boot/dtb".
+.package.prepare.dir.$package_dir."/debug".
+.package.prepare.dir.$package_dir."/reports".
+.package.prepare.dir.$package_dir."/meta".
+.package.prepare.dir.$package_dir."/secureboot".
+
+.telemetry.start.profile."aarch64-package".
+.trace.enable.package.
+
+.say."Collecting boot artifacts".
+
+.package.copy.$image.to.$package_dir."/boot/Image".
+.package.copy.$kernel_elf.to.$package_dir."/debug/kernel.elf".
+.package.copy.dir.$dtb_dir.to.$package_dir."/boot/dtb".
+.package.copy.dir.$report_dir.to.$package_dir."/reports".
+
+.if.package.copy.errors.>.0.
+    .say."Package copy failed".
+    .show.package.errors.human.
+    .trace.disable.package.
+    .ret.3.
+.end.
+
+.say."Generating package metadata".
+
+.package.manifest.create.to.$manifest.
+.package.manifest.set.name.$target.
+.package.manifest.set.arch.$arch.
+.package.manifest.set.version.$version.
+.package.manifest.set.profile.$profile.
+.package.manifest.set.kernel_image."boot/Image".
+.package.manifest.set.kernel_elf."debug/kernel.elf".
+.package.manifest.set.dtb_dir."boot/dtb".
+.package.manifest.set.created_by."VitteOS Voyager49".
+.package.manifest.set.format."vitteos-kernel-package".
+
+.package.metadata.write.$package_dir."/meta/package.ucl".
+.package.metadata.write.$package_dir."/meta/build.ucl".
+.package.metadata.write.$package_dir."/meta/platform.ucl".
+.package.metadata.write.$package_dir."/meta/modules.ucl".
+
+.say."Generating secureboot data".
+
+.secureboot.measure.file.$package_dir."/boot/Image".to.$package_dir."/secureboot/Image.measure".
+.secureboot.measure.dir.$package_dir."/boot/dtb".to.$package_dir."/secureboot/dtb.measure".
+.secureboot.policy.export.to.$package_dir."/secureboot/policy.ucl".
+.secureboot.sign.file.$package_dir."/boot/Image".to.$package_dir."/secureboot/Image.sig".
+
+.if.secureboot.result.match./failed|invalid/i.
+    .say."Secureboot packaging failed".
+    .show.secureboot.errors.human.
+    .snapshot.system.tag."package-secureboot-failed".
+    .ret.4.
+.end.
+
+.say."Generating checksums".
+
+.package.checksum.file.$package_dir."/boot/Image".append.$checksum.
+.package.checksum.file.$package_dir."/debug/kernel.elf".append.$checksum.
+.package.checksum.dir.$package_dir."/boot/dtb".append.$checksum.
+.package.checksum.file.$manifest.append.$checksum.
+.package.checksum.file.$package_dir."/secureboot/Image.sig".append.$checksum.
+
+.check.package.integrity.dir.$package_dir.
+.check.package.manifest.$manifest.
+.check.package.checksum.$checksum.
+
+.if.check.package.result.match./failed|invalid/i.
+    .say."Package integrity validation failed".
+    .show.package.errors.human.
+    .snapshot.system.tag."package-invalid".
+    .ret.5.
+.end.
+
+.say."Creating final archive".
+
+.package.archive.dir.$package_dir.to.$archive.
+.package.archive.index.$archive.
+.package.archive.verify.$archive.
+
+.if.package.archive.result.match./failed|invalid/i.
+    .say."Archive creation failed".
+    .show.package.errors.human.
+    .ret.6.
+.end.
+
+.say."Generating release reports".
+
+.package.report.generate.to.$package_dir."/reports/package-report.md".
+.package.report.generate.json.to.$package_dir."/reports/package-report.json".
+.package.report.generate.ucl.to.$package_dir."/reports/package-report.ucl".
+.package.size.report.$archive.to.$package_dir."/reports/package-size.txt".
+
+.release.note.generate.from.$manifest.to.$package_dir."/reports/release-notes.md".
+.release.artifact.register.$archive.arch.$arch.version.$version.
+
+.telemetry.stop.profile."aarch64-package".
+.trace.disable.package.
+
+.if.package.result.match./success/i.
+    .say."AArch64 package successful".
+    .snapshot.system.tag."package-success-aarch64".
+.else.
+    .say."AArch64 package completed with warnings".
+    .snapshot.system.tag."package-warning-aarch64".
+.end.
+
+.say."Package artifacts:"
+.say.$archive.
+.say.$manifest.
+.say.$checksum.
+.say.$package_dir.
+
+.ret.0.

@@ -1,1 +1,160 @@
-machine apple_m1 { performance true }
+<<< =========================================================
+   VitteOS Voyager49 Kernel
+   arch/aarch64/configs/apple_m1.ucl
+   Apple Silicon M1 AArch64 platform configuration
+   ========================================================= >>>
+
+machine apple_m1 {
+    arch aarch64
+    vendor apple
+    family apple_silicon
+    soc t8103
+    board apple_m1_generic
+    profile experimental
+
+    boot {
+        firmware iboot
+        protocol devicetree
+        dtb required
+        acpi false
+        secureboot aware
+        boot_args "console=early panic=trace root=ram0"
+    }
+
+    cpu {
+        cores 8
+        performance_cores 4
+        efficiency_cores 4
+        endian little
+        el0 true
+        el1 true
+        el2 true
+        el3 false
+        page_size 16k
+        va_bits 47
+        pa_bits 36
+    }
+
+    memory {
+        model unified
+        default_ram 8gb
+        supported_ram [8gb, 16gb]
+        dma_coherent true
+        iommu required
+        page_granule 16k
+        kernel_base 0xffff000000000000
+    }
+
+    mmu {
+        enabled true
+        stage1 true
+        stage2 optional
+        kaslr true
+        pxn true
+        uxn true
+        pan true
+        bti true
+        mte false
+    }
+
+    interrupts {
+        controller apple_aic
+        gic_compatible false
+        ipi true
+        timer_irq true
+    }
+
+    timers {
+        arch_timer true
+        frequency auto
+        counter_width 64
+    }
+
+    console {
+        early true
+        backend framebuffer
+        serial optional
+        uart unknown
+    }
+
+    framebuffer {
+        enabled true
+        simplefb true
+        width auto
+        height auto
+        format xrgb8888
+    }
+
+    storage {
+        nvme apple_ans
+        boot_storage internal_nvme
+        removable false
+    }
+
+    usb {
+        enabled true
+        type usb4
+        thunderbolt true
+    }
+
+    pcie {
+        enabled true
+        iommu true
+    }
+
+    power {
+        psci false
+        apple_power_domains true
+        sleep experimental
+        cpuidle experimental
+        dvfs experimental
+    }
+
+    thermal {
+        enabled true
+        sensors apple_smc
+        throttle policy_safe
+        critical_temp 95000
+    }
+
+    security {
+        secure_enclave present
+        amfi false
+        kernel_signature optional
+        dtb_signature optional
+        sandbox strict
+    }
+
+    virtualization {
+        el2 available
+        hypervisor experimental
+        stage2_mmu true
+    }
+
+    drivers {
+        require apple_aic
+        require apple_dart
+        require apple_ans
+        require apple_smc
+        optional simplefb
+        optional usb4
+        optional pcie
+        optional nvme
+    }
+
+    ai {
+        predictor enabled
+        thermal enabled
+        memory enabled
+        scheduler enabled
+        anomaly enabled
+    }
+
+    debug {
+        early_trace true
+        boot_log true
+        panic_dump true
+        dtb_dump true
+        mmu_dump false
+    }
+}

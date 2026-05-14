@@ -1,0 +1,515 @@
+// ============================================================
+// vitteOS-voyager49.pest
+// VitteOS Voyager49 dotS Shell / Script Grammar
+// Influences: PHP variables, OCaml match/types, Perl regex/pipes
+// ============================================================
+
+program = { SOI ~ item* ~ EOI }
+
+item = _{
+      shebang
+    | stmt
+    | NEWLINE
+}
+
+shebang = { "#!" ~ (!NEWLINE ~ ANY)* ~ NEWLINE }
+
+// ============================================================
+// Statements
+// ============================================================
+
+stmt = _{
+      command_stmt
+    | assign_stmt
+    | let_stmt
+    | const_stmt
+    | if_stmt
+    | match_stmt
+    | type_stmt
+    | fn_stmt
+    | loop_stmt
+    | while_stmt
+    | for_stmt
+    | try_stmt
+    | ret_stmt
+    | break_stmt
+    | continue_stmt
+    | import_stmt
+    | module_stmt
+    | export_stmt
+    | pipe_stmt
+}
+
+command_stmt = { dot ~ command_name ~ (dot ~ arg)* ~ dot }
+
+assign_stmt  = { dot ~ "set"   ~ dot ~ variable ~ dot ~ expr ~ dot }
+let_stmt     = { dot ~ "let"   ~ dot ~ variable ~ dot ~ expr ~ dot }
+const_stmt   = { dot ~ "const" ~ dot ~ variable ~ dot ~ expr ~ dot }
+
+ret_stmt      = { dot ~ ("ret" | "return") ~ (dot ~ expr)? ~ dot }
+break_stmt    = { dot ~ "break" ~ dot }
+continue_stmt = { dot ~ "continue" ~ dot }
+
+module_stmt = { dot ~ "module" ~ dot ~ module_path ~ dot }
+import_stmt = { dot ~ ("use" | "import") ~ dot ~ module_path ~ dot }
+export_stmt = { dot ~ "export" ~ dot ~ export_target ~ dot }
+
+export_target = { "*" | ident | module_path }
+
+// ============================================================
+// VitteOS intelligent commands
+// ============================================================
+
+command_name = {
+      "say"
+    | "see"
+    | "show"
+    | "go"
+    | "find"
+    | "why"
+    | "explain"
+    | "fix"
+    | "repair"
+    | "doctor"
+    | "predict"
+    | "sense"
+    | "watch"
+    | "trace"
+    | "probe"
+    | "map"
+    | "check"
+    | "build"
+    | "run"
+    | "test"
+    | "fuzz"
+    | "bench"
+    | "pack"
+    | "clean"
+    | "sync"
+    | "guard"
+    | "snapshot"
+    | "rollback"
+    | "learn"
+    | "heal"
+    | "audit"
+    | "secure"
+    | "mount"
+    | "spawn"
+    | "kill"
+    | "restart"
+    | "enable"
+    | "disable"
+    | "status"
+    | "dump"
+    | "load"
+    | "save"
+    | "emit"
+    | "log"
+}
+
+// ============================================================
+// Control flow
+// ============================================================
+
+if_stmt = {
+    dot ~ "if" ~ dot ~ expr ~ dot ~
+    stmt* ~
+    elif_block* ~
+    else_block? ~
+    dot ~ "end" ~ dot
+}
+
+elif_block = {
+    dot ~ "elif" ~ dot ~ expr ~ dot ~ stmt*
+}
+
+else_block = {
+    dot ~ "else" ~ dot ~ stmt*
+}
+
+match_stmt = {
+    dot ~ "match" ~ dot ~ expr ~ dot ~
+    match_case+ ~
+    dot ~ "end" ~ dot
+}
+
+match_case = {
+    dot ~ ("case" | "|") ~ dot ~ pattern ~ dot ~ stmt*
+}
+
+try_stmt = {
+    dot ~ "try" ~ dot ~
+    stmt* ~
+    catch_block+ ~
+    finally_block? ~
+    dot ~ "end" ~ dot
+}
+
+catch_block = {
+    dot ~ "catch" ~ dot ~ variable? ~ dot ~ stmt*
+}
+
+finally_block = {
+    dot ~ "finally" ~ dot ~ stmt*
+}
+
+loop_stmt = {
+    dot ~ "loop" ~ dot ~ stmt* ~ dot ~ "end" ~ dot
+}
+
+while_stmt = {
+    dot ~ "while" ~ dot ~ expr ~ dot ~ stmt* ~ dot ~ "end" ~ dot
+}
+
+for_stmt = {
+    dot ~ "for" ~ dot ~ variable ~ dot ~ "in" ~ dot ~ expr ~ dot ~
+    stmt* ~
+    dot ~ "end" ~ dot
+}
+
+// ============================================================
+// Functions / OCaml-like typed blocks
+// ============================================================
+
+fn_stmt = {
+    dot ~ "fn" ~ dot ~ ident ~ fn_params? ~ fn_return? ~ dot ~
+    stmt* ~
+    dot ~ "end" ~ dot
+}
+
+fn_params = {
+    (dot ~ param)+
+}
+
+param = {
+    variable ~ (dot ~ type_expr)?
+}
+
+fn_return = {
+    dot ~ "returns" ~ dot ~ type_expr
+}
+
+// ============================================================
+// Types
+// ============================================================
+
+type_stmt = {
+    dot ~ "type" ~ dot ~ ident ~ dot ~
+    type_case* ~
+    dot ~ "end" ~ dot
+}
+
+type_case = {
+    dot ~ "case" ~ dot ~ ident ~ type_payload? ~ dot
+}
+
+type_payload = {
+    dot ~ type_expr ~ (dot ~ type_expr)*
+}
+
+type_expr = {
+      primitive_type
+    | list_type
+    | map_type
+    | option_type
+    | result_type
+    | tuple_type
+    | module_path
+}
+
+primitive_type = {
+      "bool"
+    | "int"
+    | "i8"
+    | "i16"
+    | "i32"
+    | "i64"
+    | "i128"
+    | "u8"
+    | "u16"
+    | "u32"
+    | "u64"
+    | "u128"
+    | "float"
+    | "f32"
+    | "f64"
+    | "string"
+    | "path"
+    | "regex"
+    | "device"
+    | "task"
+    | "module"
+    | "void"
+}
+
+list_type   = { "list" ~ dot ~ type_expr }
+map_type    = { "map" ~ dot ~ type_expr ~ dot ~ type_expr }
+option_type = { "option" ~ dot ~ type_expr }
+result_type = { "result" ~ dot ~ type_expr ~ dot ~ type_expr }
+tuple_type  = { "tuple" ~ dot ~ type_expr ~ (dot ~ type_expr)+ }
+
+// ============================================================
+// Pipelines Perl-like
+// ============================================================
+
+pipe_stmt = {
+    command_stmt ~ pipe_segment+
+}
+
+pipe_segment = {
+    dot ~ "pipe" ~ dot ~ command_name ~ (dot ~ arg)* ~ dot
+}
+
+// ============================================================
+// Expressions
+// ============================================================
+
+expr = _{ logic_or }
+
+logic_or  = { logic_and ~ (dot ~ "or"  ~ dot ~ logic_and)* }
+logic_and = { equality  ~ (dot ~ "and" ~ dot ~ equality)* }
+
+equality = {
+    comparison ~ (dot ~ equality_op ~ dot ~ comparison)*
+}
+
+comparison = {
+    regex_expr ~ (dot ~ comparison_op ~ dot ~ regex_expr)*
+}
+
+regex_expr = {
+    addition ~ (dot ~ regex_op ~ dot ~ addition)*
+}
+
+addition = {
+    multiplication ~ (dot ~ add_op ~ dot ~ multiplication)*
+}
+
+multiplication = {
+    unary ~ (dot ~ mul_op ~ dot ~ unary)*
+}
+
+unary = {
+      unary_op ~ dot ~ unary
+    | call_expr
+}
+
+call_expr = {
+    primary ~ call_suffix*
+}
+
+call_suffix = {
+      dot ~ "call" ~ dot ~ arg_list?
+    | dot ~ ident
+}
+
+primary = _{
+      literal
+    | variable
+    | array
+    | hash
+    | tuple
+    | regex
+    | module_path
+    | command_expr
+    | grouped
+}
+
+grouped = { "(" ~ expr ~ ")" }
+
+command_expr = {
+    command_name ~ (dot ~ arg)*
+}
+
+arg_list = {
+    expr ~ (dot ~ expr)*
+}
+
+// ============================================================
+// Operators
+// ============================================================
+
+equality_op = {
+      "=="
+    | "!="
+    | "eq"
+    | "ne"
+}
+
+comparison_op = {
+      ">"
+    | "<"
+    | ">="
+    | "<="
+    | "gt"
+    | "lt"
+    | "gte"
+    | "lte"
+}
+
+regex_op = {
+      "match"
+    | "nomatch"
+    | "=~"
+    | "!~"
+}
+
+add_op = {
+      "+"
+    | "-"
+    | "concat"
+}
+
+mul_op = {
+      "*"
+    | "/"
+    | "%"
+}
+
+unary_op = {
+      "not"
+    | "!"
+    | "-"
+}
+
+// ============================================================
+// Values PHP / Perl style
+// ============================================================
+
+arg = _{
+      key_value
+    | expr
+}
+
+key_value = {
+    ident ~ dot ~ expr
+}
+
+literal = _{
+      string
+    | raw_string
+    | number
+    | boolean
+    | null
+}
+
+variable = @{
+    "$" ~ ident
+}
+
+array = {
+    "[" ~ (expr ~ ("," ~ expr)*)? ~ "]"
+}
+
+tuple = {
+    "(" ~ expr ~ ("," ~ expr)+ ~ ")"
+}
+
+hash = {
+    "{" ~ (hash_pair ~ ("," ~ hash_pair)*)? ~ "}"
+}
+
+hash_pair = {
+    ident ~ ":" ~ expr
+}
+
+pattern = _{
+      "_"
+    | ident
+    | variable
+    | literal
+    | constructor_pattern
+}
+
+constructor_pattern = {
+    ident ~ (dot ~ pattern)*
+}
+
+// ============================================================
+// Paths / names
+// ============================================================
+
+module_path = @{
+    ident ~ (("/" | "::" | ".") ~ ident)*
+}
+
+ident = @{
+    (ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_" | "-")*
+}
+
+// ============================================================
+// Literals
+// ============================================================
+
+boolean = { "true" | "false" }
+null    = { "null" | "none" }
+
+number = @{
+      hex
+    | bin
+    | oct
+    | float
+    | int
+}
+
+int   = { ASCII_DIGIT+ }
+float = { ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT+ }
+hex   = { "0x" ~ ASCII_HEX_DIGIT+ }
+bin   = { "0b" ~ ("0" | "1")+ }
+oct   = { "0o" ~ ('0'..'7')+ }
+
+string = @{
+    "\"" ~ string_char* ~ "\""
+}
+
+raw_string = @{
+    "r\"" ~ (!"\"" ~ ANY)* ~ "\""
+}
+
+string_char = {
+      "\\\"" 
+    | "\\n"
+    | "\\t"
+    | "\\r"
+    | "\\\\"
+    | (!"\"" ~ ANY)
+}
+
+regex = @{
+    "/" ~ regex_char* ~ "/" ~ regex_flags?
+}
+
+regex_char = {
+      "\\/"
+    | "\\n"
+    | "\\t"
+    | "\\\\"
+    | (!"/" ~ ANY)
+}
+
+regex_flags = @{
+    ("i" | "m" | "s" | "x" | "g")*
+}
+
+// ============================================================
+// Lexer
+// ============================================================
+
+dot = _{ "." }
+
+COMMENT = _{
+      "#" ~ (!NEWLINE ~ ANY)*
+    | "<<<" ~ (!">>>" ~ ANY)* ~ ">>>"
+}
+
+WHITESPACE = _{
+      " "
+    | "\t"
+    | NEWLINE
+    | COMMENT
+}
+
+NEWLINE = _{
+      "\r\n"
+    | "\n"
+}

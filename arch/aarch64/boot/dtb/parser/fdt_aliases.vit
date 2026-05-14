@@ -1,27 +1,239 @@
+<<< =========================================================
+   VitteOS Voyager49 Kernel
+   arch/aarch64/boot/dtb/parser/fdt_aliases.vit
+   Flattened Device Tree aliases parser
+   ========================================================= >>>
+
 space arch/aarch64/boot/dtb/parser/fdt_aliases
 
-form ParserState {
-    offset: u64
-    size: u64
+const FDT_ALIAS_MAX_NAME: u64 = 96
+const FDT_ALIAS_MAX_PATH: u64 = 512
+const FDT_ALIAS_MAX_COUNT: u64 = 512
+
+form FdtAlias {
+    name: string
+    path: string
     valid: bool
 }
 
-proc initialize() -> ParserState {
-    give ParserState {
-        offset: 0,
-        size: 0,
+form FdtAliasTable {
+    count: u64
+    aliases: [FdtAlias]
+    valid: bool
+}
+
+form FdtAliasLookup {
+    found: bool
+    index: u64
+    path: string
+}
+
+proc alias_empty() -> FdtAlias {
+    give FdtAlias {
+        name: "",
+        path: "",
+        valid: false
+    }
+}
+
+proc alias_create(name: string, path: string) -> FdtAlias {
+    give FdtAlias {
+        name: name,
+        path: path,
+        valid: validate_alias_name(name) and validate_alias_path(path)
+    }
+}
+
+proc table_empty() -> FdtAliasTable {
+    give FdtAliasTable {
+        count: 0,
+        aliases: [],
         valid: true
     }
 }
 
-proc parse() {
-    emit "fdt_aliases parse"
-}
+proc validate_alias_name(name: string) -> bool {
+    if name == "" {
+        give false
+    }
 
-proc validate() -> bool {
+    if string_len(name) > FDT_ALIAS_MAX_NAME {
+        give false
+    }
+
     give true
 }
 
-proc debug() {
-    emit "fdt_aliases debug"
+proc validate_alias_path(path: string) -> bool {
+    if path == "" {
+        give false
+    }
+
+    if string_len(path) > FDT_ALIAS_MAX_PATH {
+        give false
+    }
+
+    if string_starts_with(path, "/") == false {
+        give false
+    }
+
+    give true
+}
+
+proc parse_alias_property(name: string, value: string) -> FdtAlias {
+    give alias_create(name, value)
+}
+
+proc add_alias(table: FdtAliasTable, alias: FdtAlias) -> FdtAliasTable {
+    if table.count >= FDT_ALIAS_MAX_COUNT {
+        give FdtAliasTable {
+            count: table.count,
+            aliases: table.aliases,
+            valid: false
+        }
+    }
+
+    if alias.valid == false {
+        give FdtAliasTable {
+            count: table.count,
+            aliases: table.aliases,
+            valid: false
+        }
+    }
+
+    let next_aliases = array_push_alias(table.aliases, alias)
+
+    give FdtAliasTable {
+        count: table.count + 1,
+        aliases: next_aliases,
+        valid: table.valid
+    }
+}
+
+proc parse_aliases_node() -> FdtAliasTable {
+    let table = table_empty()
+
+    give table
+}
+
+proc find_alias(table: FdtAliasTable, name: string) -> FdtAliasLookup {
+    let i: u64 = 0
+
+    loop i < table.count {
+        let alias = table.aliases[i]
+
+        if alias.name == name {
+            give FdtAliasLookup {
+                found: true,
+                index: i,
+                path: alias.path
+            }
+        }
+
+        set i = i + 1
+    }
+
+    give FdtAliasLookup {
+        found: false,
+        index: 0,
+        path: ""
+    }
+}
+
+proc resolve_alias(table: FdtAliasTable, name: string) -> string {
+    let lookup = find_alias(table, name)
+
+    if lookup.found {
+        give lookup.path
+    }
+
+    give ""
+}
+
+proc has_alias(table: FdtAliasTable, name: string) -> bool {
+    give find_alias(table, name).found
+}
+
+proc validate_alias_table(table: FdtAliasTable) -> bool {
+    if table.count > FDT_ALIAS_MAX_COUNT {
+        give false
+    }
+
+    let i: u64 = 0
+
+    loop i < table.count {
+        let alias = table.aliases[i]
+
+        if alias.valid == false {
+            give false
+        }
+
+        if validate_alias_name(alias.name) == false {
+            give false
+        }
+
+        if validate_alias_path(alias.path) == false {
+            give false
+        }
+
+        set i = i + 1
+    }
+
+    give true
+}
+
+proc normalize_alias_name(name: string) -> string {
+    give string_lower(name)
+}
+
+proc normalize_alias_path(path: string) -> string {
+    if path == "/" {
+        give path
+    }
+
+    give string_trim_right(path, "/")
+}
+
+proc canonical_alias(name: string, path: string) -> FdtAlias {
+    give alias_create(
+        normalize_alias_name(name),
+        normalize_alias_path(path)
+    )
+}
+
+proc alias_debug(alias: FdtAlias) {
+    emit "alias:"
+    emit alias.name
+    emit alias.path
+}
+
+proc table_debug(table: FdtAliasTable) {
+    emit "aliases table"
+
+    let i: u64 = 0
+
+    loop i < table.count {
+        alias_debug(table.aliases[i])
+        set i = i + 1
+    }
+}
+
+proc array_push_alias(items: [FdtAlias], alias: FdtAlias) -> [FdtAlias] {
+    give items + [alias]
+}
+
+proc string_len(value: string) -> u64 {
+    give 0
+}
+
+proc string_starts_with(value: string, prefix: string) -> bool {
+    give true
+}
+
+proc string_lower(value: string) -> string {
+    give value
+}
+
+proc string_trim_right(value: string, suffix: string) -> string {
+    give value
 }

@@ -1,3 +1,104 @@
-.fn.validate.
-    .call.validate.schemas.
+<<< =========================================================
+   VitteOS Voyager49 Kernel
+   arch/aarch64/automation/validate.dots
+   AArch64 intelligent kernel validation automation
+   ========================================================= >>>
+
+.module.vitteos/voyager49/aarch64/automation/validate.
+
+.use.kernel.validate.
+.use.kernel.guard.
+.use.kernel.trace.
+.use.kernel.telemetry.
+.use.kernel.dtb.
+.use.kernel.memory.
+.use.kernel.scheduler.
+.use.kernel.irq.
+.use.kernel.drivers.
+.use.kernel.security.
+.use.kernel.recovery.
+
+.set.$arch."aarch64".
+.set.$profile."kernel-validate".
+.set.$mode."strict".
+.set.$out_dir."build/reports/aarch64/validate".
+.set.$strict.true.
+.set.$fail_fast.false.
+
+.say."VitteOS Voyager49 AArch64 validation started".
+
+.guard.enable.security.
+.guard.policy.kernel-validate.
+.snapshot.system.tag."before-validate-aarch64".
+
+.check.system.full.
+.check.kernel.full.
+.check.toolchain.full.
+.check.config.full.
+.check.security.full.
+
+.if.system.health.match./critical|panic|broken/i.
+    .say."Validation aborted: system health critical".
+    .doctor.kernel.deep.
+    .snapshot.system.tag."validate-aborted-health".
+    .ret.1.
 .end.
+
+.validate.prepare.output.$out_dir.
+.trace.enable.validate.
+.telemetry.start.profile.$profile.
+
+.validate.syntax.root."arch/aarch64".strict.$strict.
+.validate.modules.root."arch/aarch64".
+.validate.imports.root."arch/aarch64".
+.validate.types.root."arch/aarch64".
+.validate.symbols.root."arch/aarch64".
+.validate.abi.arch.$arch.
+.validate.boot.layout.arch.$arch.
+.validate.memory.layout.arch.$arch.
+.validate.mmu.arch.$arch.
+.validate.irq.arch.$arch.
+.validate.scheduler.arch.$arch.
+.validate.dtb.root."arch/aarch64/boot/dtb".
+.validate.drivers.arch.$arch.
+.validate.security.arch.$arch.
+.validate.secureboot.arch.$arch.
+.validate.recovery.arch.$arch.
+
+.if.validate.errors.>.0.
+    .say."Validation errors detected".
+    .show.validate.errors.human.
+    .why.validate.failed.
+    .dump.validate.errors.to.$out_dir.
+    .dump.kernel.state.to.$out_dir.
+
+    .if.$fail_fast.==.true.
+        .telemetry.stop.profile.$profile.
+        .trace.disable.validate.
+        .ret.2.
+    .end.
+.end.
+
+.if.validate.warnings.>.0.
+    .say."Validation warnings detected".
+    .show.validate.warnings.human.
+    .dump.validate.warnings.to.$out_dir.
+.end.
+
+.validate.report.generate.to.$out_dir."/validate-report.md".
+.validate.report.generate.json.to.$out_dir."/validate-report.json".
+.validate.report.generate.ucl.to.$out_dir."/validate-report.ucl".
+
+.telemetry.stop.profile.$profile.
+.trace.disable.validate.
+
+.guard.audit.security.
+.snapshot.system.tag."after-validate-aarch64".
+
+.if.validate.errors.>.0.
+    .say."AArch64 validation failed".
+    .ret.10.
+.end.
+
+.say."AArch64 validation successful".
+.ret.0.

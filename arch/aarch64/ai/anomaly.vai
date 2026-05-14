@@ -1,1 +1,122 @@
-detect anomaly in kernel.trace
+<<< =========================================================
+   VitteOS Voyager49 Kernel
+   arch/aarch64/ai/anomaly.vai
+   AI anomaly detector for AArch64 boot/runtime telemetry
+   ========================================================= >>>
+
+module anomaly
+
+version "0.1.0"
+target "aarch64"
+domain "kernel"
+mode "early-safe"
+
+use source kernel.trace
+use source dtb.boot
+use source irq.events
+use source mmu.events
+use source scheduler.events
+use source thermal.sensors
+use source power.states
+use source panic.reports
+
+model aarch64_kernel_anomaly {
+    input boot_time_ms
+    input irq_latency_ns
+    input tlb_flush_count
+    input mmio_fault_count
+    input cpu_temperature
+    input scheduler_stalls
+    input panic_count
+    input dtb_probe_failures
+
+    baseline boot_time_ms <= 2500
+    baseline irq_latency_ns <= 50000
+    baseline tlb_flush_count <= 100000
+    baseline mmio_fault_count == 0
+    baseline cpu_temperature <= 85000
+    baseline scheduler_stalls <= 4
+    baseline panic_count == 0
+    baseline dtb_probe_failures == 0
+
+    weight boot_time_ms 8
+    weight irq_latency_ns 12
+    weight tlb_flush_count 7
+    weight mmio_fault_count 25
+    weight cpu_temperature 10
+    weight scheduler_stalls 18
+    weight panic_count 40
+    weight dtb_probe_failures 22
+}
+
+rule boot_slow_anomaly {
+    when boot_time_ms > 2500
+    severity medium
+    emit "AARCH64_BOOT_SLOW"
+}
+
+rule irq_latency_anomaly {
+    when irq_latency_ns > 50000
+    severity high
+    emit "AARCH64_IRQ_LATENCY_HIGH"
+}
+
+rule mmio_fault_anomaly {
+    when mmio_fault_count > 0
+    severity critical
+    emit "AARCH64_MMIO_FAULT"
+}
+
+rule dtb_probe_anomaly {
+    when dtb_probe_failures > 0
+    severity high
+    emit "AARCH64_DTB_PROBE_FAILURE"
+}
+
+rule thermal_anomaly {
+    when cpu_temperature > 85000
+    severity high
+    emit "AARCH64_THERMAL_LIMIT"
+}
+
+rule scheduler_anomaly {
+    when scheduler_stalls > 4
+    severity high
+    emit "AARCH64_SCHEDULER_STALL"
+}
+
+rule panic_anomaly {
+    when panic_count > 0
+    severity critical
+    emit "AARCH64_KERNEL_PANIC"
+}
+
+score anomaly_score {
+    collect from aarch64_kernel_anomaly
+    threshold normal 0..29
+    threshold suspicious 30..59
+    threshold dangerous 60..84
+    threshold critical 85..100
+}
+
+action on suspicious {
+    trace enable
+    telemetry increase
+}
+
+action on dangerous {
+    trace enable
+    dump kernel.state
+    dump irq.state
+    dump dtb.state
+}
+
+action on critical {
+    trace enable
+    dump kernel.state
+    dump panic.state
+    request recovery.safe_mode
+}
+
+export model aarch64_kernel_anomaly
+export score anomaly_score

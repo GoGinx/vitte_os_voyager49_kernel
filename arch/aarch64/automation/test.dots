@@ -1,3 +1,161 @@
-.fn.test.
-    .call.run.tests.
+<<< =========================================================
+   VitteOS Voyager49 Kernel
+   arch/aarch64/automation/test.dots
+   AArch64 intelligent kernel test automation
+   ========================================================= >>>
+
+.module.vitteos/voyager49/aarch64/automation/test.
+
+.use.kernel.test.
+.use.kernel.guard.
+.use.kernel.trace.
+.use.kernel.telemetry.
+.use.kernel.scheduler.
+.use.kernel.memory.
+.use.kernel.irq.
+.use.kernel.dtb.
+.use.kernel.drivers.
+.use.kernel.recovery.
+
+.set.$arch."aarch64".
+.set.$profile."kernel-test".
+.set.$mode."safe".
+.set.$suite."full".
+.set.$rounds.5.
+.set.$out_dir."build/reports/aarch64/test".
+.set.$fail_fast.false.
+.set.$strict.true.
+
+.say."VitteOS Voyager49 AArch64 test started".
+
+.guard.enable.security.
+.guard.policy.kernel-test.
+.snapshot.system.tag."before-test-aarch64".
+
+.check.system.full.
+.check.kernel.full.
+.check.memory.full.
+.check.scheduler.full.
+.check.irq.full.
+.check.dtb.full.
+.check.drivers.full.
+
+.if.system.health.match./critical|panic|broken/i.
+    .say."Test aborted: system health critical".
+    .doctor.kernel.deep.
+    .snapshot.system.tag."test-aborted-health".
+    .ret.1.
 .end.
+
+.test.prepare.output.$out_dir.
+.test.prepare.suite.$suite.arch.$arch.
+.test.discover.root."arch/aarch64".
+.test.discover.root."kernel".
+.test.discover.root."drivers".
+.test.discover.root."mm".
+.test.discover.root."fs".
+.test.discover.root."net".
+
+.if.test.count.==.0.
+    .say."Test aborted: no tests discovered".
+    .ret.2.
+.end.
+
+.trace.enable.test.
+.telemetry.start.profile.$profile.
+
+.set.$round.0.
+.set.$failed.0.
+.set.$passed.0.
+
+.loop.
+    .set.$round.$round.+.1.
+
+    .say."Test round".
+    .say.$round.
+
+    .test.run.boot.arch.$arch.mode.$mode.
+    .test.run.dtb.parser.arch.$arch.
+    .test.run.dtb.validator.arch.$arch.
+    .test.run.dtb.runtime.arch.$arch.
+    .test.run.mmu.arch.$arch.
+    .test.run.memory.arch.$arch.
+    .test.run.irq.arch.$arch.
+    .test.run.scheduler.arch.$arch.
+    .test.run.smp.arch.$arch.
+    .test.run.syscall.arch.$arch.
+    .test.run.drivers.arch.$arch.
+    .test.run.pci.arch.$arch.
+    .test.run.usb.arch.$arch.
+    .test.run.framebuffer.arch.$arch.
+    .test.run.thermal.arch.$arch.
+    .test.run.power.arch.$arch.
+    .test.run.security.arch.$arch.
+    .test.run.recovery.arch.$arch.
+
+    .set.$round_failed.test.result.failed.
+    .set.$round_passed.test.result.passed.
+
+    .set.$failed.$failed.+.$round_failed.
+    .set.$passed.$passed.+.$round_passed.
+
+    .if.$round_failed.>.0.
+        .say."Failures detected in round".
+        .say.$round.
+
+        .show.test.failures.human.
+        .why.test.failed.
+        .dump.test.failures.to.$out_dir.
+        .dump.kernel.state.to.$out_dir.
+        .dump.scheduler.state.to.$out_dir.
+        .dump.memory.state.to.$out_dir.
+        .dump.irq.state.to.$out_dir.
+        .trace.test.failures.
+
+        .if.$fail_fast.==.true.
+            .say."Fail-fast enabled, stopping tests".
+            .break.
+        .end.
+    .end.
+
+    .if.test.result.match./panic|oops|fault|deadlock/i.
+        .say."Kernel fault detected during tests".
+        .snapshot.system.tag."test-kernel-fault".
+        .trace.panic.
+        .doctor.kernel.deep.
+        .recover.kernel.safe.
+    .end.
+
+    .if.$round.>=.$rounds.
+        .break.
+    .end.
+.end.
+
+.telemetry.stop.profile.$profile.
+.trace.disable.test.
+
+.say."Post-test analysis".
+
+.test.coverage.collect.to.$out_dir.
+.test.coverage.report.to.$out_dir."/coverage.md".
+.test.report.generate.to.$out_dir."/test-report.md".
+.test.report.generate.json.to.$out_dir."/test-report.json".
+.test.report.generate.ucl.to.$out_dir."/test-report.ucl".
+
+.predict.crash.
+.predict.memory.
+.predict.scheduler.
+.predict.thermal.
+
+.guard.audit.security.
+.snapshot.system.tag."after-test-aarch64".
+
+.if.$failed.>.0.
+    .say."AArch64 tests completed with failures".
+    .say.$failed.
+    .ret.10.
+.end.
+
+.say."AArch64 tests successful".
+.say.$passed.
+.ret.0.

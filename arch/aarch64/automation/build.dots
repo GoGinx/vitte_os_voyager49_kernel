@@ -1,4 +1,201 @@
-.fn.build.
-    .call.compile.dtb.
-    .call.link.kernel.
+<<< =========================================================
+   VitteOS Voyager49 Kernel
+   arch/aarch64/automation/build.dots
+   AArch64 intelligent kernel build automation
+   ========================================================= >>>
+
+.module.vitteos/voyager49/aarch64/automation/build.
+
+.use.kernel.build.
+.use.kernel.compiler.
+.use.kernel.linker.
+.use.kernel.dtb.
+.use.kernel.guard.
+.use.kernel.trace.
+.use.kernel.telemetry.
+.use.kernel.package.
+
+.set.$arch."aarch64".
+.set.$target."vitteos-voyager49-kernel".
+.set.$profile."release".
+.set.$mode."safe".
+.set.$root.".".
+.set.$build_dir."build/aarch64".
+.set.$out_dir."build/aarch64/out".
+.set.$report_dir."build/aarch64/reports".
+.set.$image."build/aarch64/out/Image".
+.set.$kernel_elf."build/aarch64/out/kernel.elf".
+.set.$dtb_dir."arch/aarch64/boot/dtb".
+.set.$strict.true.
+
+.say."VitteOS Voyager49 AArch64 build started".
+
+.guard.enable.security.
+.guard.policy.kernel-build.
+.snapshot.system.tag."before-aarch64-build".
+
+.check.system.full.
+.check.toolchain.full.
+.check.compiler.full.
+.check.linker.full.
+.check.dtb.full.
+.check.config.full.
+
+.if.system.health.match./critical|panic|broken/i.
+    .say."Build aborted: system health is critical".
+    .doctor.kernel.deep.
+    .snapshot.system.tag."build-aborted-health".
+    .ret.1.
 .end.
+
+.if.compiler.status.match./missing|broken/i.
+    .say."Build aborted: compiler unavailable".
+    .doctor.compiler.deep.
+    .ret.2.
+.end.
+
+.clean.build.dir.$build_dir.
+.build.prepare.dir.$build_dir.
+.build.prepare.dir.$out_dir.
+.build.prepare.dir.$report_dir.
+
+.say."Generating configuration".
+
+.build.config.arch.$arch.profile.$profile.mode.$mode.
+.build.config.export.to.$build_dir."/kernel.ucl".
+.build.manifest.generate.to.$build_dir."/manifest.ucl".
+
+.say."Parsing sources".
+
+.build.scan.sources.root.$root.arch.$arch.
+.build.scan.modules.root."kernel".
+.build.scan.modules.root."arch/aarch64".
+.build.scan.modules.root."drivers".
+.build.scan.modules.root."mm".
+.build.scan.modules.root."fs".
+.build.scan.modules.root."net".
+
+.if.build.sources.count.==.0.
+    .say."Build aborted: no source files found".
+    .ret.3.
+.end.
+
+.say."Validating syntax".
+
+.build.syntax.check.root.$root.arch.$arch.strict.$strict.
+.build.types.check.root.$root.arch.$arch.strict.$strict.
+.build.lints.check.root.$root.arch.$arch.
+
+.if.build.syntax.errors.>.0.
+    .say."Syntax errors detected".
+    .show.build.errors.human.
+    .dump.build.errors.to.$report_dir.
+    .ret.4.
+.end.
+
+.say."Compiling kernel objects".
+
+.trace.enable.build.
+.telemetry.start.profile."aarch64-build".
+
+.build.compile.module."kernel".arch.$arch.out.$build_dir.
+.build.compile.module."arch/aarch64".arch.$arch.out.$build_dir.
+.build.compile.module."drivers".arch.$arch.out.$build_dir.
+.build.compile.module."mm".arch.$arch.out.$build_dir.
+.build.compile.module."fs".arch.$arch.out.$build_dir.
+.build.compile.module."net".arch.$arch.out.$build_dir.
+.build.compile.module."security".arch.$arch.out.$build_dir.
+.build.compile.module."runtime".arch.$arch.out.$build_dir.
+
+.if.build.compile.errors.>.0.
+    .say."Compilation failed".
+    .show.build.errors.human.
+    .why.build.failed.
+    .dump.compiler.state.to.$report_dir.
+    .trace.disable.build.
+    .ret.5.
+.end.
+
+.say."Building DTB subsystem".
+
+.build.dtb.scan.dir.$dtb_dir.
+.build.dtb.validate.dir.$dtb_dir.
+.build.dtb.compile.dir.$dtb_dir.out.$out_dir.
+
+.if.build.dtb.errors.>.0.
+    .say."DTB build failed".
+    .show.dtb.errors.human.
+    .why.dtb.failed.
+    .repair.dtb.safe.
+    .ret.6.
+.end.
+
+.say."Linking kernel".
+
+.build.link.objects.from.$build_dir.to.$kernel_elf.arch.$arch.
+.build.link.map.to.$report_dir."/kernel.map".
+.build.link.symbols.to.$report_dir."/symbols.txt".
+
+.if.build.link.errors.>.0.
+    .say."Link failed".
+    .show.link.errors.human.
+    .why.link.failed.
+    .dump.linker.state.to.$report_dir.
+    .ret.7.
+.end.
+
+.say."Generating boot image".
+
+.build.image.from.$kernel_elf.to.$image.arch.$arch.
+.build.image.sign.input.$image.mode.$mode.
+.build.image.checksum.input.$image.to.$report_dir."/Image.sha256".
+
+.if.build.image.errors.>.0.
+    .say."Image generation failed".
+    .show.image.errors.human.
+    .ret.8.
+.end.
+
+.say."Running post-build validation".
+
+.check.image.$image.full.
+.check.symbols.$report_dir."/symbols.txt".
+.check.memory.map.$report_dir."/kernel.map".
+.check.boot.layout.arch.$arch.
+.check.secureboot.policy.
+
+.if.check.result.match./failed|invalid/i.
+    .say."Post-build validation failed".
+    .doctor.build.deep.
+    .snapshot.system.tag."build-invalid".
+    .ret.9.
+.end.
+
+.say."Packaging artifacts".
+
+.pack.kernel.image.$image.to.$out_dir.
+.pack.kernel.elf.$kernel_elf.to.$out_dir.
+.pack.dtb.from.$out_dir.to.$out_dir.
+.pack.reports.from.$report_dir.to.$out_dir.
+.pack.manifest.from.$build_dir."/manifest.ucl".to.$out_dir.
+
+.telemetry.stop.profile."aarch64-build".
+.trace.disable.build.
+
+.build.report.generate.to.$report_dir."/build-report.md".
+.build.report.generate.json.to.$report_dir."/build-report.json".
+
+.if.build.result.match./success/i.
+    .say."AArch64 build successful".
+    .snapshot.system.tag."build-success-aarch64".
+.else.
+    .say."AArch64 build completed with warnings".
+    .snapshot.system.tag."build-warning-aarch64".
+.end.
+
+.say."Artifacts:"
+.say.$image.
+.say.$kernel_elf.
+.say.$out_dir.
+
+.ret.0.

@@ -1,3 +1,110 @@
-.fn.fuzz.
-    .call.randomize.dtb.
+<<< =========================================================
+   VitteOS Voyager49 Kernel
+   arch/aarch64/automation/fuzz.dots
+   AArch64 intelligent kernel fuzz automation
+   ========================================================= >>>
+
+.module.vitteos/voyager49/aarch64/automation/fuzz.
+
+.use.kernel.fuzz.
+.use.kernel.guard.
+.use.kernel.trace.
+.use.kernel.telemetry.
+.use.kernel.dtb.
+.use.kernel.memory.
+.use.kernel.irq.
+.use.kernel.scheduler.
+.use.kernel.recovery.
+
+.set.$arch."aarch64".
+.set.$profile."kernel-fuzz".
+.set.$mode."sandbox".
+.set.$rounds.1000.
+.set.$seed."auto".
+.set.$target."dtb".
+.set.$out_dir."build/reports/aarch64/fuzz".
+
+.say."VitteOS Voyager49 AArch64 fuzz started".
+
+.guard.enable.security.
+.guard.policy.kernel-fuzz.
+.snapshot.system.tag."before-fuzz".
+
+.check.system.full.
+.check.kernel.full.
+.check.memory.full.
+.check.dtb.full.
+
+.if.system.health.match./critical|panic|broken/i.
+    .say."Fuzz aborted: system health critical".
+    .doctor.kernel.deep.
+    .ret.1.
 .end.
+
+.fuzz.prepare.output.$out_dir.
+.fuzz.seed.mode.$seed.
+.fuzz.target.$target.arch.$arch.
+.fuzz.sandbox.enable.
+
+.trace.enable.fuzz.
+.telemetry.start.profile.$profile.
+
+.set.$i.0.
+
+.loop.
+    .set.$i.$i.+.1.
+
+    .fuzz.generate.input.target.$target.round.$i.
+    .fuzz.mutate.input.strategy."bitflip".
+    .fuzz.mutate.input.strategy."boundary".
+    .fuzz.mutate.input.strategy."structure".
+    .fuzz.mutate.input.strategy."invalid-cells".
+    .fuzz.mutate.input.strategy."overflow".
+    .fuzz.mutate.input.strategy."unicode".
+    .fuzz.mutate.input.strategy."truncated".
+
+    .fuzz.run.target.$target.round.$i.arch.$arch.
+
+    .if.fuzz.result.match./panic|oops|fault|corruption/i.
+        .say."Fuzz crash detected".
+        .snapshot.system.tag."fuzz-crash".
+        .dump.kernel.state.to.$out_dir.
+        .dump.memory.state.to.$out_dir.
+        .dump.dtb.state.to.$out_dir.
+        .dump.fuzz.input.round.$i.to.$out_dir.
+        .trace.panic.
+        .repair.kernel.safe.
+    .end.
+
+    .if.fuzz.result.match./timeout|hang|deadlock/i.
+        .say."Fuzz hang detected".
+        .snapshot.system.tag."fuzz-hang".
+        .dump.scheduler.state.to.$out_dir.
+        .dump.irq.state.to.$out_dir.
+        .dump.fuzz.input.round.$i.to.$out_dir.
+        .recover.scheduler.safe.
+    .end.
+
+    .if.fuzz.coverage.new.
+        .say."New fuzz coverage discovered".
+        .fuzz.save.corpus.round.$i.to.$out_dir.
+    .end.
+
+    .if.$i.>=.$rounds.
+        .break.
+    .end.
+.end.
+
+.telemetry.stop.profile.$profile.
+.trace.disable.fuzz.
+
+.fuzz.minimize.crashes.from.$out_dir.
+.fuzz.deduplicate.crashes.from.$out_dir.
+.fuzz.report.generate.to.$out_dir."/fuzz-report.md".
+.fuzz.report.generate.json.to.$out_dir."/fuzz-report.json".
+
+.guard.audit.security.
+.snapshot.system.tag."after-fuzz".
+
+.say."VitteOS Voyager49 AArch64 fuzz complete".
+.ret.0.
