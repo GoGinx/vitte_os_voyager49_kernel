@@ -1,1 +1,392 @@
-predict cpu.temperature using thermal.sensors
+<<< =========================================================
+   VitteOS Voyager49 Kernel
+   arch/aarch64/ai/thermal.vai
+   AArch64 AI Thermal Intelligence System
+   ========================================================= >>>
+
+module thermal
+
+version "0.9.0"
+target "aarch64"
+domain "kernel-thermal"
+mode "continuous-runtime"
+
+use source thermal.sensors
+use source thermal.zones
+use source thermal.trips
+use source thermal.cooling
+use source thermal.throttle
+use source cpu.frequency
+use source cpu.topology
+use source gpu.telemetry
+use source memory.controller
+use source power.states
+use source scheduler.runqueue
+use source scheduler.migration
+use source irq.events
+use source dtb.thermal
+use source telemetry.kernel
+use source trace.thermal
+use source panic.reports
+
+model aarch64_thermal_model {
+
+    input cpu_temperature
+    input gpu_temperature
+    input memory_controller_temperature
+    input soc_temperature
+    input board_temperature
+    input vrm_temperature
+
+    input thermal_zone_count
+    input active_trip_points
+    input passive_trip_points
+    input critical_trip_points
+
+    input fan_state
+    input cooling_device_count
+    input cooling_level
+    input throttle_count
+    input thermal_throttle_count
+
+    input cpu_frequency_mhz
+    input gpu_frequency_mhz
+    input memory_frequency_mhz
+    input power_draw_mw
+    input voltage_mv
+
+    input runnable_tasks
+    input irq_rate
+    input scheduler_latency_ns
+    input memory_pressure
+
+    input thermal_ramp_rate
+    input hotspot_delta
+    input sensor_fault_count
+    input thermal_shutdown_events
+
+    baseline cpu_temperature <= 85000
+    baseline gpu_temperature <= 85000
+    baseline memory_controller_temperature <= 90000
+    baseline soc_temperature <= 85000
+    baseline board_temperature <= 75000
+    baseline vrm_temperature <= 95000
+    baseline throttle_count <= 2
+    baseline thermal_throttle_count <= 2
+    baseline thermal_ramp_rate <= 5000
+    baseline hotspot_delta <= 15000
+    baseline sensor_fault_count == 0
+    baseline thermal_shutdown_events == 0
+
+    weight cpu_temperature 14
+    weight gpu_temperature 10
+    weight memory_controller_temperature 12
+    weight soc_temperature 14
+    weight board_temperature 7
+    weight vrm_temperature 10
+    weight throttle_count 15
+    weight thermal_throttle_count 20
+    weight power_draw_mw 8
+    weight thermal_ramp_rate 18
+    weight hotspot_delta 12
+    weight sensor_fault_count 35
+    weight thermal_shutdown_events 90
+}
+
+model thermal_ramp_predictor {
+
+    input cpu_temperature
+    input gpu_temperature
+    input soc_temperature
+    input power_draw_mw
+    input runnable_tasks
+    input irq_rate
+    input cpu_frequency_mhz
+    input cooling_level
+
+    predict temperature_next
+    predict ramp_probability
+    predict throttle_probability
+    predict shutdown_probability
+
+    threshold stable 0..25
+    threshold warming 26..50
+    threshold hot 51..75
+    threshold critical 76..100
+}
+
+model cooling_optimizer {
+
+    input fan_state
+    input cooling_device_count
+    input cooling_level
+    input cpu_temperature
+    input soc_temperature
+    input power_draw_mw
+    input thermal_ramp_rate
+
+    predict optimal_cooling_level
+    predict cooling_latency_ms
+    predict fan_required
+    predict passive_cooling_possible
+
+    learning adaptive
+}
+
+model frequency_guard {
+
+    input cpu_frequency_mhz
+    input gpu_frequency_mhz
+    input memory_frequency_mhz
+    input cpu_temperature
+    input gpu_temperature
+    input memory_controller_temperature
+    input throttle_count
+
+    predict safe_cpu_frequency_mhz
+    predict safe_gpu_frequency_mhz
+    predict safe_memory_frequency_mhz
+    predict performance_loss_probability
+}
+
+model hotspot_detector {
+
+    input cpu_temperature
+    input gpu_temperature
+    input memory_controller_temperature
+    input soc_temperature
+    input board_temperature
+    input vrm_temperature
+    input hotspot_delta
+
+    predict hotspot_probability
+    predict sensor_outlier_probability
+    predict cooling_zone_target
+}
+
+rule cpu_temperature_high {
+    when cpu_temperature > 85000
+    severity high
+    emit "AARCH64_CPU_TEMPERATURE_HIGH"
+}
+
+rule soc_temperature_high {
+    when soc_temperature > 85000
+    severity high
+    emit "AARCH64_SOC_TEMPERATURE_HIGH"
+}
+
+rule memory_controller_hot {
+    when memory_controller_temperature > 90000
+    severity high
+    emit "AARCH64_MEMORY_CONTROLLER_HOT"
+}
+
+rule vrm_temperature_critical {
+    when vrm_temperature > 95000
+    severity critical
+    emit "AARCH64_VRM_TEMPERATURE_CRITICAL"
+}
+
+rule thermal_ramp_fast {
+    when thermal_ramp_rate > 10000
+    severity high
+    emit "AARCH64_THERMAL_RAMP_FAST"
+}
+
+rule hotspot_detected {
+    when hotspot_delta > 20000
+    severity medium
+    emit "AARCH64_THERMAL_HOTSPOT"
+}
+
+rule throttle_storm {
+    when thermal_throttle_count > 8
+    severity high
+    emit "AARCH64_THERMAL_THROTTLE_STORM"
+}
+
+rule sensor_failure {
+    when sensor_fault_count > 0
+    severity critical
+    emit "AARCH64_THERMAL_SENSOR_FAILURE"
+}
+
+rule shutdown_predicted {
+    when shutdown_probability > 50
+    severity critical
+    emit "AARCH64_THERMAL_SHUTDOWN_PREDICTED"
+}
+
+rule thermal_shutdown_detected {
+    when thermal_shutdown_events > 0
+    severity fatal
+    emit "AARCH64_THERMAL_SHUTDOWN_DETECTED"
+}
+
+learning thermal_behavior {
+
+    dataset thermal.sensors
+    dataset thermal.zones
+    dataset thermal.throttle
+    dataset cpu.frequency
+    dataset gpu.telemetry
+    dataset memory.controller
+    dataset power.states
+    dataset scheduler.runqueue
+    dataset trace.thermal
+    dataset panic.reports
+
+    feature temperature_history
+    feature ramp_patterns
+    feature throttle_patterns
+    feature cooling_response
+    feature workload_heat_map
+    feature irq_heat_interference
+    feature memory_heat_patterns
+    feature power_spike_patterns
+    feature sensor_fault_patterns
+    feature shutdown_precursors
+
+    optimize cooling
+    optimize performance
+    optimize power
+    optimize stability
+    optimize safe_frequency
+    optimize workload_placement
+
+    retrain every 5m
+}
+
+recommendation passive_cooling {
+    when ramp_probability > 40
+
+    action reduce.cpu.frequency
+    action reduce.gpu.frequency
+    action lower.power_state
+}
+
+recommendation active_cooling {
+    when cpu_temperature > 85000
+
+    action increase.cooling_level
+    action enable.fan
+    action migrate.hot_tasks
+}
+
+recommendation protect_memory_controller {
+    when memory_controller_temperature > 90000
+
+    action reduce.memory.frequency
+    action throttle.dma
+    action reduce.page_reclaim_burst
+}
+
+recommendation hotspot_mitigation {
+    when hotspot_probability > 50
+
+    action migrate.hot_tasks
+    action rebalance.irq_affinity
+    action prefer.cool_cores
+}
+
+recommendation emergency_thermal_shutdown {
+    when shutdown_probability > 80
+
+    action dump.thermal_state
+    action sync.filesystems
+    action request.safe_shutdown
+}
+
+security thermal_integrity {
+
+    detect sensor_spoofing
+    detect impossible_temperature_delta
+    detect unauthorized_frequency_boost
+    detect cooling_device_failure
+    detect trip_point_corruption
+    detect dtb_thermal_zone_mismatch
+
+    response trace
+    response isolate
+    response clamp_frequency
+    response dump
+}
+
+score thermal_health {
+
+    collect from aarch64_thermal_model
+    collect from thermal_ramp_predictor
+    collect from cooling_optimizer
+    collect from frequency_guard
+    collect from hotspot_detector
+
+    threshold cool 0..15
+    threshold stable 16..35
+    threshold warm 36..55
+    threshold hot 56..80
+    threshold critical 81..100
+}
+
+score shutdown_risk {
+
+    collect from thermal_ramp_predictor
+
+    threshold low 0..25
+    threshold elevated 26..50
+    threshold dangerous 51..80
+    threshold fatal 81..100
+}
+
+score performance_throttle_risk {
+
+    collect from frequency_guard
+    collect from cooling_optimizer
+
+    threshold low 0..25
+    threshold medium 26..50
+    threshold high 51..80
+    threshold severe 81..100
+}
+
+action on warm {
+
+    telemetry increase
+    trace enable.thermal
+}
+
+action on hot {
+
+    telemetry increase
+    trace enable.thermal
+    dump thermal.zones
+    dump cpu.frequency
+    dump cooling.devices
+
+    reduce.cpu.frequency
+    migrate.hot_tasks
+}
+
+action on critical {
+
+    telemetry max
+    trace enable.all
+    dump thermal.state
+    dump power.state
+    dump scheduler.state
+    dump panic.precursors
+
+    clamp.frequency
+    increase.cooling_level
+    request recovery.thermal_safe_mode
+}
+
+export model aarch64_thermal_model
+export model thermal_ramp_predictor
+export model cooling_optimizer
+export model frequency_guard
+export model hotspot_detector
+
+export score thermal_health
+export score shutdown_risk
+export score performance_throttle_risk

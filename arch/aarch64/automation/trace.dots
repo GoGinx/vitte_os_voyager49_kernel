@@ -1,3 +1,196 @@
-.fn.trace.
-    .call.trace.boot.
+<<< =========================================================
+   VitteOS Voyager49 Kernel
+   arch/aarch64/automation/trace.dots
+   AArch64 intelligent kernel tracing automation
+   ========================================================= >>>
+
+.module.vitteos/voyager49/aarch64/automation/trace.
+
+.use.kernel.trace.
+.use.kernel.telemetry.
+.use.kernel.guard.
+.use.kernel.scheduler.
+.use.kernel.memory.
+.use.kernel.irq.
+.use.kernel.dtb.
+.use.kernel.drivers.
+.use.kernel.thermal.
+.use.kernel.power.
+.use.kernel.recovery.
+
+.set.$arch."aarch64".
+.set.$profile."kernel-trace".
+.set.$mode."live".
+.set.$duration."60s".
+.set.$out_dir."build/reports/aarch64/trace".
+.set.$trace_boot.true.
+.set.$trace_irq.true.
+.set.$trace_memory.true.
+.set.$trace_scheduler.true.
+.set.$trace_dtb.true.
+.set.$trace_drivers.true.
+.set.$trace_thermal.true.
+.set.$trace_power.true.
+
+.say."VitteOS Voyager49 AArch64 tracing started".
+
+.guard.enable.security.
+.guard.policy.kernel-trace.
+.snapshot.system.tag."before-trace-aarch64".
+
+.check.system.full.
+.check.kernel.full.
+.check.trace.full.
+.check.telemetry.full.
+
+.if.system.health.match./critical|panic|broken/i.
+    .say."Trace aborted: system health critical".
+    .doctor.kernel.deep.
+    .snapshot.system.tag."trace-aborted-health".
+    .ret.1.
 .end.
+
+.trace.prepare.output.$out_dir.
+.telemetry.start.profile.$profile.
+
+.if.$trace_boot.==.true.
+    .trace.enable.boot.
+    .trace.enable.initcall.
+    .trace.enable.dtb.
+.end.
+
+.if.$trace_irq.==.true.
+    .trace.enable.irq.
+    .trace.enable.softirq.
+    .trace.enable.gic.
+    .trace.enable.ipi.
+.end.
+
+.if.$trace_memory.==.true.
+    .trace.enable.memory.
+    .trace.enable.mmu.
+    .trace.enable.page_fault.
+    .trace.enable.tlb.
+    .trace.enable.slab.
+.end.
+
+.if.$trace_scheduler.==.true.
+    .trace.enable.scheduler.
+    .trace.enable.context_switch.
+    .trace.enable.preemption.
+    .trace.enable.wakeup.
+    .trace.enable.migration.
+.end.
+
+.if.$trace_dtb.==.true.
+    .trace.enable.dtb.parse.
+    .trace.enable.dtb.probe.
+    .trace.enable.dtb.overlay.
+    .trace.enable.dtb.driver_match.
+.end.
+
+.if.$trace_drivers.==.true.
+    .trace.enable.driver.probe.
+    .trace.enable.driver.bind.
+    .trace.enable.pci.
+    .trace.enable.usb.
+    .trace.enable.storage.
+    .trace.enable.net.
+.end.
+
+.if.$trace_thermal.==.true.
+    .trace.enable.thermal.
+    .trace.enable.cooling.
+    .trace.enable.throttle.
+.end.
+
+.if.$trace_power.==.true.
+    .trace.enable.power.
+    .trace.enable.idle.
+    .trace.enable.frequency.
+.end.
+
+.say."Tracing active".
+
+.watch.system.live.duration.$duration.
+.watch.scheduler.live.duration.$duration.
+.watch.memory.live.duration.$duration.
+.watch.irq.live.duration.$duration.
+.watch.thermal.live.duration.$duration.
+
+.trace.capture.duration.$duration.to.$out_dir.
+.telemetry.capture.duration.$duration.to.$out_dir.
+
+.if.trace.result.match./panic|oops|fault|deadlock/i.
+    .say."Fault detected during trace".
+    .snapshot.system.tag."trace-fault-aarch64".
+    .dump.kernel.state.to.$out_dir.
+    .dump.scheduler.state.to.$out_dir.
+    .dump.memory.state.to.$out_dir.
+    .dump.irq.state.to.$out_dir.
+    .dump.panic.state.to.$out_dir.
+    .doctor.kernel.deep.
+    .recover.kernel.safe.
+.end.
+
+.if.trace.result.match./latency|stall|timeout/i.
+    .say."Latency anomaly detected during trace".
+    .why.system.slow.
+    .predict.scheduler.
+    .predict.memory.
+    .dump.trace.latency.to.$out_dir.
+.end.
+
+.trace.disable.boot.
+.trace.disable.initcall.
+.trace.disable.irq.
+.trace.disable.softirq.
+.trace.disable.gic.
+.trace.disable.ipi.
+.trace.disable.memory.
+.trace.disable.mmu.
+.trace.disable.page_fault.
+.trace.disable.tlb.
+.trace.disable.slab.
+.trace.disable.scheduler.
+.trace.disable.context_switch.
+.trace.disable.preemption.
+.trace.disable.wakeup.
+.trace.disable.migration.
+.trace.disable.dtb.
+.trace.disable.dtb.parse.
+.trace.disable.dtb.probe.
+.trace.disable.dtb.overlay.
+.trace.disable.dtb.driver_match.
+.trace.disable.driver.probe.
+.trace.disable.driver.bind.
+.trace.disable.pci.
+.trace.disable.usb.
+.trace.disable.storage.
+.trace.disable.net.
+.trace.disable.thermal.
+.trace.disable.cooling.
+.trace.disable.throttle.
+.trace.disable.power.
+.trace.disable.idle.
+.trace.disable.frequency.
+
+.telemetry.stop.profile.$profile.
+
+.trace.report.generate.to.$out_dir."/trace-report.md".
+.trace.report.generate.json.to.$out_dir."/trace-report.json".
+.trace.report.generate.ucl.to.$out_dir."/trace-report.ucl".
+.trace.timeline.generate.to.$out_dir."/timeline.md".
+.trace.flamegraph.generate.to.$out_dir."/flamegraph.svg".
+.trace.latency.report.to.$out_dir."/latency.md".
+
+.predict.crash.
+.predict.scheduler.
+.predict.memory.
+.predict.thermal.
+
+.guard.audit.security.
+.snapshot.system.tag."after-trace-aarch64".
+
+.say."VitteOS Voyager49 AArch64 tracing complete".
+.ret.0.

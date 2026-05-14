@@ -1,3 +1,186 @@
-.fn.benchmark.
-    .call.measure.runtime.
+<<< =========================================================
+   VitteOS Voyager49 Kernel
+   arch/aarch64/automation/benchmark.dots
+   AArch64 intelligent benchmark automation
+   ========================================================= >>>
+
+.module.vitteos/voyager49/aarch64/automation/benchmark.
+
+.use.kernel.bench.
+.use.kernel.trace.
+.use.kernel.telemetry.
+.use.kernel.scheduler.
+.use.kernel.memory.
+.use.kernel.irq.
+.use.kernel.dtb.
+.use.kernel.thermal.
+.use.kernel.power.
+.use.kernel.guard.
+
+.set.$arch."aarch64".
+.set.$profile."kernel-benchmark".
+.set.$mode."safe".
+.set.$rounds.10.
+.set.$warmup.3.
+.set.$output."build/reports/aarch64/benchmark".
+.set.$threshold_latency_ns.100000.
+.set.$threshold_irq_ns.50000.
+.set.$threshold_boot_ms.2500.
+.set.$threshold_memory_pressure.70.
+.set.$threshold_temperature.85000.
+
+.say."VitteOS Voyager49 AArch64 benchmark started".
+
+.guard.enable.security.
+.guard.policy.kernel-benchmark.
+.snapshot.system.tag."before-benchmark".
+
+.check.system.full.
+.check.kernel.full.
+.check.memory.full.
+.check.scheduler.full.
+.check.thermal.full.
+.check.dtb.full.
+
+.if.system.health.match./critical|panic|broken/i.
+    .say."System is not healthy enough for benchmark".
+    .doctor.kernel.deep.
+    .snapshot.system.tag."benchmark-aborted-health".
+    .ret.1.
 .end.
+
+.say."Warmup phase".
+
+.loop.
+    .bench.warmup.arch.$arch.mode.$mode.
+    .set.$warmup.$warmup.-.1.
+    .if.$warmup.<=.0.
+        .break.
+    .end.
+.end.
+
+.say."Benchmark phase".
+
+.set.$i.0.
+
+.loop.
+    .set.$i.$i.+.1.
+
+    .say."Benchmark round".
+    .say.$i.
+
+    .trace.enable.scheduler.
+    .trace.enable.memory.
+    .trace.enable.irq.
+    .trace.enable.dtb.
+    .trace.enable.thermal.
+
+    .telemetry.reset.
+    .telemetry.start.profile.$profile.round.$i.
+
+    .bench.boot.arch.$arch.
+    .bench.scheduler.arch.$arch.
+    .bench.context_switch.arch.$arch.
+    .bench.syscall.arch.$arch.
+    .bench.irq.arch.$arch.
+    .bench.memory.alloc.arch.$arch.
+    .bench.memory.page_fault.arch.$arch.
+    .bench.mmu.tlb.arch.$arch.
+    .bench.dtb.parse.arch.$arch.
+    .bench.dtb.probe.arch.$arch.
+    .bench.driver.probe.arch.$arch.
+    .bench.storage.latency.arch.$arch.
+    .bench.net.latency.arch.$arch.
+    .bench.thermal.stability.arch.$arch.
+    .bench.power.idle.arch.$arch.
+
+    .telemetry.stop.profile.$profile.round.$i.
+
+    .set.$boot_ms.telemetry.read.boot_time_ms.
+    .set.$sched_ns.telemetry.read.scheduler_latency_ns.
+    .set.$irq_ns.telemetry.read.irq_latency_ns.
+    .set.$mem_pressure.telemetry.read.memory_pressure.
+    .set.$temp.telemetry.read.cpu_temperature.
+
+    .if.$boot_ms.>.$threshold_boot_ms.
+        .say."Boot benchmark threshold exceeded".
+        .why.boot.slow.
+        .trace.boot.
+    .end.
+
+    .if.$sched_ns.>.$threshold_latency_ns.
+        .say."Scheduler latency threshold exceeded".
+        .why.scheduler.slow.
+        .trace.scheduler.live.
+    .end.
+
+    .if.$irq_ns.>.$threshold_irq_ns.
+        .say."IRQ latency threshold exceeded".
+        .why.irq.slow.
+        .trace.irq.live.
+    .end.
+
+    .if.$mem_pressure.>.$threshold_memory_pressure.
+        .say."Memory pressure threshold exceeded".
+        .why.memory.high.
+        .predict.memory.
+    .end.
+
+    .if.$temp.>.$threshold_temperature.
+        .say."Thermal threshold exceeded".
+        .predict.thermal.
+        .repair.thermal.safe.
+    .end.
+
+    .dump.benchmark.round.$i.to.$output.
+    .trace.disable.scheduler.
+    .trace.disable.memory.
+    .trace.disable.irq.
+    .trace.disable.dtb.
+    .trace.disable.thermal.
+
+    .if.$i.>=.$rounds.
+        .break.
+    .end.
+.end.
+
+.say."Post benchmark analysis".
+
+.predict.boot.
+.predict.scheduler.
+.predict.memory.
+.predict.thermal.
+.predict.crash.
+
+.doctor.kernel.deep.
+.map.memory.full.
+.map.irq.full.
+.map.dtb.full.
+.show.scheduler.human.
+.show.telemetry.human.
+
+.bench.compare.baseline.to.$output.
+.bench.rank.results.by.latency.
+.bench.export.json.to.$output.
+.bench.export.markdown.to.$output.
+.bench.export.trace.to.$output.
+
+.if.telemetry.result.match./regression/i.
+    .say."Performance regression detected".
+    .snapshot.system.tag."benchmark-regression".
+    .trace.enable.all.
+    .dump.kernel.state.to.$output.
+    .dump.scheduler.state.to.$output.
+    .dump.memory.state.to.$output.
+    .dump.irq.state.to.$output.
+.end.
+
+.if.telemetry.result.match./stable/i.
+    .say."Benchmark stable".
+    .snapshot.system.tag."benchmark-stable".
+.end.
+
+.guard.audit.security.
+.clean.benchmark.temp.
+.say."VitteOS Voyager49 AArch64 benchmark complete".
+.ret.0.

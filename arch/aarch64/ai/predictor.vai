@@ -1,1 +1,414 @@
-predict boot.latency using runtime.history
+<<< =========================================================
+   VitteOS Voyager49 Kernel
+   arch/aarch64/ai/predictor.vai
+   AArch64 Kernel Predictive Intelligence Core
+   ========================================================= >>>
+
+module predictor
+
+version "0.9.0"
+target "aarch64"
+domain "kernel-ai"
+mode "early-safe-continuous"
+
+use source telemetry.kernel
+use source trace.boot
+use source trace.scheduler
+use source trace.memory
+use source trace.irq
+use source trace.syscall
+use source trace.dtb
+use source trace.power
+use source trace.thermal
+use source trace.storage
+use source trace.net
+use source panic.reports
+
+model aarch64_kernel_predictor {
+
+    input boot_time_ms
+    input initcall_latency_ns
+    input syscall_latency_ns
+    input irq_latency_ns
+    input scheduler_latency_ns
+    input context_switch_ns
+    input memory_pressure
+    input page_faults_per_sec
+    input tlb_miss_rate
+    input cpu_temperature
+    input power_draw_mw
+    input storage_latency_ns
+    input network_latency_ns
+    input dtb_probe_failures
+    input panic_count
+    input recovery_count
+
+    baseline boot_time_ms <= 2500
+    baseline initcall_latency_ns <= 500000
+    baseline syscall_latency_ns <= 2000
+    baseline irq_latency_ns <= 50000
+    baseline scheduler_latency_ns <= 100000
+    baseline context_switch_ns <= 8000
+    baseline memory_pressure <= 70
+    baseline page_faults_per_sec <= 1000
+    baseline tlb_miss_rate <= 5
+    baseline cpu_temperature <= 85000
+    baseline power_draw_mw <= 15000
+    baseline storage_latency_ns <= 2000000
+    baseline network_latency_ns <= 1000000
+    baseline dtb_probe_failures == 0
+    baseline panic_count == 0
+    baseline recovery_count <= 1
+
+    weight boot_time_ms 7
+    weight initcall_latency_ns 8
+    weight syscall_latency_ns 9
+    weight irq_latency_ns 14
+    weight scheduler_latency_ns 13
+    weight context_switch_ns 10
+    weight memory_pressure 15
+    weight page_faults_per_sec 11
+    weight tlb_miss_rate 12
+    weight cpu_temperature 10
+    weight power_draw_mw 6
+    weight storage_latency_ns 8
+    weight network_latency_ns 7
+    weight dtb_probe_failures 25
+    weight panic_count 50
+    weight recovery_count 18
+}
+
+model boot_predictor {
+
+    input firmware_delay_ms
+    input dtb_parse_time_ms
+    input mmu_init_time_ms
+    input irq_init_time_ms
+    input smp_boot_time_ms
+    input driver_probe_time_ms
+    input initramfs_time_ms
+    input userspace_handoff_ms
+
+    predict next_boot_time_ms
+    predict boot_failure_probability
+    predict slow_initcall_probability
+    predict driver_block_probability
+
+    threshold optimal 0..20
+    threshold normal 21..45
+    threshold degraded 46..70
+    threshold critical 71..100
+}
+
+model scheduler_predictor {
+
+    input runnable_tasks
+    input blocked_tasks
+    input context_switch_ns
+    input scheduler_latency_ns
+    input cpu_idle_ratio
+    input cpu_steal_ratio
+    input irq_preemption_count
+    input thermal_throttle_count
+
+    predict next_latency_ns
+    predict starvation_probability
+    predict unfairness_probability
+    predict overload_probability
+    predict migration_need
+
+    learning adaptive
+}
+
+model memory_predictor {
+
+    input free_ram_mb
+    input used_ram_mb
+    input cached_ram_mb
+    input slab_ram_mb
+    input memory_pressure
+    input page_faults_per_sec
+    input major_faults_per_sec
+    input reclaim_pressure
+    input fragmentation_score
+    input oom_events
+
+    predict memory_pressure_next
+    predict oom_probability
+    predict reclaim_need
+    predict compaction_need
+    predict hugepage_failure_probability
+}
+
+model irq_predictor {
+
+    input irq_latency_ns
+    input irq_rate
+    input softirq_rate
+    input interrupt_storm_count
+    input gic_pending_count
+    input ipi_rate
+    input timer_tick_latency_ns
+
+    predict irq_storm_probability
+    predict latency_spike_probability
+    predict gic_saturation_probability
+    predict timer_drift_probability
+}
+
+model thermal_predictor {
+
+    input cpu_temperature
+    input gpu_temperature
+    input memory_controller_temperature
+    input thermal_throttle_count
+    input fan_state
+    input power_draw_mw
+    input cpu_frequency_mhz
+
+    predict temperature_next
+    predict throttle_probability
+    predict shutdown_probability
+    predict safe_frequency_mhz
+}
+
+model power_predictor {
+
+    input power_draw_mw
+    input battery_percent
+    input cpu_idle_ratio
+    input device_active_count
+    input thermal_pressure
+    input scheduler_load
+    input governor_state
+
+    predict battery_runtime_min
+    predict power_spike_probability
+    predict idle_opportunity
+    predict governor_target
+}
+
+model device_predictor {
+
+    input dtb_probe_failures
+    input driver_bind_failures
+    input mmio_fault_count
+    input dma_fault_count
+    input pci_error_count
+    input usb_reset_count
+    input storage_timeout_count
+    input net_link_flaps
+
+    predict driver_failure_probability
+    predict device_timeout_probability
+    predict bus_instability_probability
+    predict safe_reprobe_window
+}
+
+model panic_predictor {
+
+    input panic_count
+    input oops_count
+    input watchdog_events
+    input memory_corruption_events
+    input invalid_mappings
+    input irq_faults
+    input scheduler_deadlocks
+    input thermal_shutdown_events
+
+    predict panic_probability
+    predict recovery_success_probability
+    predict safe_mode_need
+    predict dump_priority
+}
+
+rule boot_degradation_predicted {
+    when boot_failure_probability > 60
+    severity high
+    emit "AARCH64_BOOT_FAILURE_PREDICTED"
+}
+
+rule scheduler_starvation_predicted {
+    when starvation_probability > 55
+    severity high
+    emit "AARCH64_SCHEDULER_STARVATION_PREDICTED"
+}
+
+rule oom_predicted {
+    when oom_probability > 70
+    severity critical
+    emit "AARCH64_OOM_PREDICTED"
+}
+
+rule irq_storm_predicted {
+    when irq_storm_probability > 65
+    severity high
+    emit "AARCH64_IRQ_STORM_PREDICTED"
+}
+
+rule thermal_shutdown_predicted {
+    when shutdown_probability > 50
+    severity critical
+    emit "AARCH64_THERMAL_SHUTDOWN_PREDICTED"
+}
+
+rule driver_failure_predicted {
+    when driver_failure_probability > 60
+    severity high
+    emit "AARCH64_DRIVER_FAILURE_PREDICTED"
+}
+
+rule panic_predicted {
+    when panic_probability > 40
+    severity critical
+    emit "AARCH64_KERNEL_PANIC_PREDICTED"
+}
+
+learning predictive_kernel_behavior {
+
+    dataset telemetry.kernel
+    dataset trace.boot
+    dataset trace.scheduler
+    dataset trace.memory
+    dataset trace.irq
+    dataset trace.thermal
+    dataset trace.power
+    dataset trace.devices
+    dataset panic.reports
+
+    feature boot_patterns
+    feature latency_patterns
+    feature memory_pressure_patterns
+    feature irq_burst_patterns
+    feature thermal_ramp_patterns
+    feature driver_failure_patterns
+    feature panic_precursors
+    feature recovery_patterns
+
+    optimize stability
+    optimize latency
+    optimize memory
+    optimize power
+    optimize thermal
+    optimize recovery
+
+    retrain every 5m
+}
+
+recommendation preemptive_memory_reclaim {
+    when oom_probability > 50
+
+    action reclaim.inactive
+    action compact.zones
+    action drop.cold_cache
+}
+
+recommendation preemptive_irq_mitigation {
+    when irq_storm_probability > 50
+
+    action throttle.interrupt_source
+    action rebalance.irq_affinity
+    action enable.polling_mode
+}
+
+recommendation preemptive_thermal_control {
+    when throttle_probability > 50
+
+    action reduce.frequency
+    action migrate.hot_tasks
+    action lower.power_state
+}
+
+recommendation preemptive_driver_reprobe {
+    when driver_failure_probability > 50
+
+    action delay.reprobe
+    action reset.bus
+    action enable.safe_driver_mode
+}
+
+recommendation preemptive_safe_mode {
+    when panic_probability > 60
+
+    action dump.kernel_state
+    action disable.experimental_drivers
+    action request.safe_mode
+}
+
+score kernel_future_risk {
+
+    collect from aarch64_kernel_predictor
+    collect from boot_predictor
+    collect from scheduler_predictor
+    collect from memory_predictor
+    collect from irq_predictor
+    collect from thermal_predictor
+    collect from power_predictor
+    collect from device_predictor
+    collect from panic_predictor
+
+    threshold optimal 0..15
+    threshold stable 16..35
+    threshold degraded 36..60
+    threshold dangerous 61..84
+    threshold critical 85..100
+}
+
+score boot_risk {
+    collect from boot_predictor
+
+    threshold low 0..25
+    threshold medium 26..55
+    threshold high 56..80
+    threshold fatal 81..100
+}
+
+score runtime_risk {
+    collect from scheduler_predictor
+    collect from memory_predictor
+    collect from irq_predictor
+    collect from thermal_predictor
+
+    threshold low 0..25
+    threshold elevated 26..50
+    threshold dangerous 51..80
+    threshold fatal 81..100
+}
+
+action on degraded {
+
+    telemetry increase
+    trace enable.predictor
+}
+
+action on dangerous {
+
+    telemetry increase
+    trace enable.predictor
+    dump scheduler.state
+    dump memory.state
+    dump irq.state
+}
+
+action on critical {
+
+    telemetry max
+    trace enable.all
+    dump kernel.state
+    dump panic.precursors
+    request recovery.safe_mode
+}
+
+export model aarch64_kernel_predictor
+export model boot_predictor
+export model scheduler_predictor
+export model memory_predictor
+export model irq_predictor
+export model thermal_predictor
+export model power_predictor
+export model device_predictor
+export model panic_predictor
+
+export score kernel_future_risk
+export score boot_risk
+export score runtime_risk
